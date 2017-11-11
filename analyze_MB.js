@@ -39,7 +39,7 @@ const labelling = function (img,copy=true) {
   let h = img.height;
   // Creating a copy of the image that has a extra white row at the top
   let img_copy = [];
-  for(let i=0;i<h;i++){
+  for(let i=0;i<h+1;i++){
     for(let j=0;j<w;j++){
       if(i===0){
         img_copy[j] = 0;
@@ -57,7 +57,6 @@ const labelling = function (img,copy=true) {
 
   for(let i=1;i<h+1;i++){
     for(let j=0;j<w;j++){
-      console.log(matrixLabel[2, 2]);
       let p = img_copy[i * w + j];
       let pLabel = matrixLabel[i * w + j];
       console.log("checking pixel at " + (i-1) + ", " + j);
@@ -65,49 +64,22 @@ const labelling = function (img,copy=true) {
         console.log("pixel is black");
         //Checking if the black pixel has a white pixel above. If that is the
         //case, it must be an external contour and we execute contour tracing
-        if(img_copy[(i-1) * w + j] === 0 && pLabel === 0 && matrixLabel[(i-1) * w + j] != -1){
+        if(img_copy[(i-1) * w + j] === 0 && pLabel === 0){
           console.log("pixel is from external contour");
           matrixLabel[i * w + j] = label;
-          let secondPixel = tracer(img_copy, w, h, [i, j], 1, matrixLabel);
-          if (secondPixel != null){
-            console.log("pixel has neighbors");
-            let nextPixel = secondPixel;
-            let rotation = secondPixel[0];
-            let coords = secondPixel[1];
-            while(JSON.stringify(coords) != JSON.stringify([i,j]) && JSON.stringify(tracer(img_copy, w, h, coords, rotation, matrixLabel)) != JSON.stringify(secondPixel)){
-              console.log("check neighbor for " + coords);
-              matrixLabel[coords[0] * w + coords[1]] = label;
-              nextPixel = tracer(img_copy, w, h, coords, rotation, matrixLabel);
-              rotation = nextPixel[0];
-              coords = nextPixel[1];
-            }
-          }
+          let tmp = tracerRecursif(img_copy, w, h, [1, [i, j]], [1, [i, j]], null, matrixLabel, label)
           label += 1;
         }
         //Checking if the pixel under is white. Then it must be an internal
         //contour. We execute contour tracing for the internal contour.
         else if (img_copy[(i+1) * w + j] === 0 && matrixLabel[(i+1) * w + j] != -1) {
+          console.log("pixel is from internal contour");
           if(pLabel === 0){
+            console.log(matrixLabel[i * w + j -1]);
             pLabel = matrixLabel[i * w + j -1];
             matrixLabel[i * w + j] = matrixLabel[i * w + j -1];
           }
-          let secondPixel = tracer(img_copy, w, h, [i, j], 5, matrixLabel);
-          if (secondPixel != null){
-            let nextPixel = secondPixel;
-            let rotation = secondPixel[0];
-            let coords = secondPixel[1];
-            while(JSON.stringify(coords) != JSON.stringify([i,j]) && JSON.stringify(tracer(img_copy, w, h, coords, rotation, matrixLabel)) != JSON.stringify(secondPixel)){
-              console.log("check neighbor for " + coords);
-              matrixLabel[coords[0] * w + coords[1]] = label;
-              nextPixel = tracer(img_copy, w, h, coords, rotation, matrixLabel);
-              rotation = nextPixel[0];
-              coords = nextPixel[1];
-            }
-          }
-        }
-        else if(pLabel === 0){
-          matrixLabel[i * w + j] = matrixLabel[i * w + j -1]
-          label += 1;
+          let tmp = tracerRecursif(img_copy, w, h, [5, [i, j]], [5, [i, j]], null, matrixLabel, pLabel)
         }
       }
     }
@@ -116,13 +88,42 @@ const labelling = function (img,copy=true) {
   return matrixLabel;
 }
 
+const tracerRecursif = function(img, w, h, previous, origin, second, labelMatrix, label){
+  let i = previous[1][0];
+  let j = previous[1][1];
+  let rotationMatrixI = [0, 1, 1, 1, 0, -1, -1, -1];
+  let rotationMatrixJ = [1, 1, 0, -1, -1, -1, 0, 1];
+  let rotationIndex = (previous[0] + 6) % 8;
+  let neighbor = [];
+  for(let r=0;r<8;r++){
+    if(img[(i+rotationMatrixI[rotationIndex]) * w + j+rotationMatrixJ[rotationIndex]] === 255){
+      labelMatrix[(i+rotationMatrixI[rotationIndex]) * w + j+rotationMatrixJ[rotationIndex]] = label;
+      neighbor.push(rotationIndex);
+      neighbor.push([i+rotationMatrixI[rotationIndex], j+rotationMatrixJ[rotationIndex]]);
+      if (second === null){
+        second = [rotationIndex, [i+rotationMatrixI[rotationIndex], j+rotationMatrixJ[rotationIndex]]];
+      }
+      else if (JSON.stringify(neighbor[1]) === JSON.stringify(second[1]) && JSON.stringify(previous[1]) === JSON.stringify(origin[1])){
+        return null;
+      }
+      tracerRecursif(img, w, h, neighbor, origin, second, labelMatrix, label);
+      return null;
+    }
+    else{
+      labelMatrix[(i+rotationMatrixI[rotationIndex]) * w + j+rotationMatrixJ[rotationIndex]] = -1;
+    }
+    rotationIndex = (rotationIndex + 1) % 8;
+  }
+  return null;
+}
+
 const tracer = function (img, w, h, index, previous, labelMatrix){
   console.log("**********************************************************");
   console.log("in tracer for pixel at " + index);
 
   let i = index[0];
   let j = index[1];
-  let rotationMatrixI = [0, -1, -1, -1, 0, 1, 1, 1];
+  let rotationMatrixI = [0, 1, 1, 1, 0, -1, -1, -1];
   let rotationMatrixJ = [1, 1, 0, -1, -1, -1, 0, 1];
   let rotationIndex = (previous + 6) % 8;
   let neighbors = [];
@@ -163,11 +164,23 @@ const measure = function (params) {
 }
 
 let img = new TImage();
-//img.pixelData = [0, 0, 255, 255, 0, 0, 0, 0, 0, 0, 255, 255, 0, 0, 0, 0, 255, 0, 0, 0, 0, 255, 255, 0, 0];
-img.pixelData = [0, 0, 255, 255, 0, 0, 0, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-img.width = 5;
-img.height = 5;
-img.length = 25;
+//img.pixelData = [0, 0, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+img.pixelData = [
+  0, 255, 255, 255, 255, 255, 0, 0,
+  0, 255, 0, 0, 0, 255, 255, 0,
+  0, 255, 255, 0, 0, 255, 255, 0,
+  0, 255, 255, 255, 255, 255, 255, 0,
+  0, 255, 255, 255, 255, 255, 255, 0,
+  0, 255, 255, 255, 255, 255, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 255, 0, 0, 0, 0, 0];
+
+img.width = 8;
+img.height = 8;
+img.length = 64;
 
 result = labelling(img);
+for(let i=0;i<img.length+img.height;i+=img.height){
+  console.log(result.slice(i, (i+img.width)));
+}
 console.log(result);
