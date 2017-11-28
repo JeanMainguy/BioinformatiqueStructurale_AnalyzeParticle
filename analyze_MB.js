@@ -38,17 +38,9 @@ const labelling = function (img,copy=true) {
   let w = img.width;
   let h = img.height;
   // Creating a copy of the image that has a extra white row at the top
-  let img_copy = [];
-  for(let i=0;i<h+1;i++){
-    for(let j=0;j<w;j++){
-      if(i===0){
-        img_copy[j] = 0;
-      }
-      else{
-        img_copy[w * (i) + j] = img.pixelData[w * (i-1) + j];
-      }
-    }
-  }
+  let img_copy = Array.apply(null, Array(w)).map(Number.prototype.valueOf,0);
+
+  img.pixelData.map( (value) => img_copy.push(value));
   console.log(img_copy);
 
   let label = 1;
@@ -184,3 +176,4 @@ for(let i=0;i<img.length+img.height;i+=img.height){
   console.log(result.slice(i, (i+img.width)));
 }
 console.log(result);
+console.log(img)
