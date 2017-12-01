@@ -22,15 +22,20 @@
  * Jean-Christophe Taveau
  */
 
+ /**
+  * @module analyze
+  */
+
 /**
  * Finds the objects in an image and return an object containing lists of coordinates such as :
  * o = {1:[[1, 1], [2, 1]], 2:[[4, 4]]}
  * 8-connected components
  * Implementing the algorithm from Chang et al. (2003)
  *
- * @params {type} <name> - <Description>
- * @return {type} - <Description>
- * @author
+ * @param {TRaster} img - Input image
+ * @param {boolean} copy - Copy mode
+ * @return {type} A set of Regions Of Interest (ROI)
+ * @author TODO
  */
 
 const labelling = function (img,copy=true) {
@@ -39,45 +44,68 @@ const labelling = function (img,copy=true) {
   let h = img.height;
   // Creating a copy of the image that has a extra white row at the top
   let img_copy = Array.apply(null, Array(w)).map(Number.prototype.valueOf,0);
-
-  img.pixelData.map( (value) => img_copy.push(value));
+  let test = 0;
+  img.getRaster().pixelData.map( value => img_copy.push(value));
   console.log(img_copy);
 
   let label = 1;
   let matrixLabel = new Array(img.length + w).fill(0);
+  let pixelValue = 0;
+  img_copy.map( function(value, index) {
+      pLabel = matrixLabel[index];
+      pixelValue = (value === 255) ? toto(label) : 0;
+        //   (img_copy[index-w] === 0 && pLabel === 0) ? function(){
+        //       matrixLabel[index] = label;
+        //       tracerRecursif(img_copy, w, h, [1, [int(index/w), index%w]], [1, [int(index/w), index%w]], null, matrixLabel, label);
+        //       label++;} : null;
+    //
+    //     (img_copy[index+w] === 0 && matrixLabel[index+w] != -1)? function(){
+    //         (pLabel === 0)? function(){
+    //             pLabel = matrixLabel[index-1];
+    //             matrixLabel[index] = matrixLabel[index-1];
+    //         } : null;
+    //         tracerRecursif(img_copy, w, h, [5, [int(index/w), index%w]], [5, [int(index/w), index%w]], null, matrixLabel, pLabel);
+    //     } : null;
+    //    } : null;
+        return pixelValue;
+    });
+    return matrixLabel;
 
+  // for(let i=1;i<h+1;i++){
+  //   for(let j=0;j<w;j++){
+  //     let p = img_copy[i * w + j];
+  //     let pLabel = matrixLabel[i * w + j];
+  //     console.log("checking pixel at " + (i-1) + ", " + j);
+  //     if(p === 255){
+  //       console.log("pixel is black");
+  //       //Checking if the black pixel has a white pixel above. If that is the
+  //       //case, it must be an external contour and we execute contour tracing
+  //       if(img_copy[(i-1) * w + j] === 0 && pLabel === 0){
+  //         console.log("pixel is from external contour");
+  //         matrixLabel[i * w + j] = label;
+  //         tracerRecursif(img_copy, w, h, [1, [i, j]], [1, [i, j]], null, matrixLabel, label)
+  //         label += 1;
+  //       }
+  //       //Checking if the pixel under is white. Then it must be an internal
+  //       //contour. We execute contour tracing for the internal contour.
+  //       else if (img_copy[(i+1) * w + j] === 0 && matrixLabel[(i+1) * w + j] != -1) {
+  //         console.log("pixel is from internal contour");
+  //         if(pLabel === 0){
+  //           console.log(matrixLabel[i * w + j -1]);
+  //           pLabel = matrixLabel[i * w + j -1];
+  //           matrixLabel[i * w + j] = matrixLabel[i * w + j -1];
+  //         }
+  //         let tmp = tracerRecursif(img_copy, w, h, [5, [i, j]], [5, [i, j]], null, matrixLabel, pLabel)
+  //       }
+  //     }
+  //   }
+  // }
+  // console.log(`labelling`);
+  // return matrixLabel;
+}
 
-  for(let i=1;i<h+1;i++){
-    for(let j=0;j<w;j++){
-      let p = img_copy[i * w + j];
-      let pLabel = matrixLabel[i * w + j];
-      console.log("checking pixel at " + (i-1) + ", " + j);
-      if(p === 255){
-        console.log("pixel is black");
-        //Checking if the black pixel has a white pixel above. If that is the
-        //case, it must be an external contour and we execute contour tracing
-        if(img_copy[(i-1) * w + j] === 0 && pLabel === 0){
-          console.log("pixel is from external contour");
-          matrixLabel[i * w + j] = label;
-          let tmp = tracerRecursif(img_copy, w, h, [1, [i, j]], [1, [i, j]], null, matrixLabel, label)
-          label += 1;
-        }
-        //Checking if the pixel under is white. Then it must be an internal
-        //contour. We execute contour tracing for the internal contour.
-        else if (img_copy[(i+1) * w + j] === 0 && matrixLabel[(i+1) * w + j] != -1) {
-          console.log("pixel is from internal contour");
-          if(pLabel === 0){
-            console.log(matrixLabel[i * w + j -1]);
-            pLabel = matrixLabel[i * w + j -1];
-            matrixLabel[i * w + j] = matrixLabel[i * w + j -1];
-          }
-          let tmp = tracerRecursif(img_copy, w, h, [5, [i, j]], [5, [i, j]], null, matrixLabel, pLabel)
-        }
-      }
-    }
-  }
-  console.log(`labelling`);
-  return matrixLabel;
+const toto = function(label){
+    return label;
 }
 
 const tracerRecursif = function(img, w, h, previous, origin, second, labelMatrix, label){
@@ -141,23 +169,25 @@ const tracer = function (img, w, h, index, previous, labelMatrix){
 }
 
 /**
- * <Description>
+ * Measure a set of Regions Of Interest (ROI)
  *
- * @params {type} <name> - <Description>
- * @return {type} - <Description>
- * @author
+ * @param {type} params - Measurements Parameters (eg. Area, Centroid)
+ * @param {type} roiset - A set of ROIs
+ * @param {boolean} copy - Useless. Just here for compatibility
+ * @return {type} Measurements and/or result image
+ * @author TODO
  */
 const measure = function (params) {
-  return function (img,copy=true) {
+  return function (roiset,copy=true) {
     // TODO
     console.log(`measure ${params}`);
     return new TMeasurements();
   }
 }
 
-let img = new TImage();
+let img = new T.Image('uint8', 8, 8);
 //img.pixelData = [0, 0, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-img.pixelData = [
+let pixelData = [
   0, 255, 255, 255, 255, 255, 0, 0,
   0, 255, 0, 0, 0, 255, 255, 0,
   0, 255, 255, 0, 0, 255, 255, 0,
@@ -167,9 +197,7 @@ img.pixelData = [
   0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 255, 0, 0, 0, 0, 0];
 
-img.width = 8;
-img.height = 8;
-img.length = 64;
+img.setPixels(pixelData);
 
 result = labelling(img);
 for(let i=0;i<img.length+img.height;i+=img.height){
