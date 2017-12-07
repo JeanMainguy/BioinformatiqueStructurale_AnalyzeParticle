@@ -40,6 +40,31 @@
 
 const labelling = function (img,copy=true) {
 
+    function checkPixelAbove(index){
+        return (img_copy[index-w] === 0 && pLabel === 0) ? labelOuterCountour(index) : 0;
+    }
+
+    function checkPixelUnder(index){
+        return (img_copy[index+w] === 0 && matrixLabel[index+w] != -1)? labelOuterCountour(index) : 0;
+    }
+
+    function labelOuterCountour(index){
+        matrixLabel[index] = label;
+        tracerRecursif(img_copy, w, h, [1, [Math.floor(index/w), index%w]], [1, [Math.floor(index/w), index%w]], null, matrixLabel, label);
+        label++;
+        return 255;
+    }
+
+    function labelInnerCountour(index){
+        (pLabel === 0)? giveLabel(index) : null;
+        tracerRecursif(img_copy, w, h, [5, [int(index/w), index%w]], [5, [int(index/w), index%w]], null, matrixLabel, pLabel);
+    }
+
+    function giveLabel(index){
+        pLabel = matrixLabel[index-1];
+        matrixLabel[index] = matrixLabel[index-1];
+    }
+
   let w = img.width;
   let h = img.height;
   // Creating a copy of the image that has a extra white row at the top
@@ -50,65 +75,45 @@ const labelling = function (img,copy=true) {
 
   let label = 1;
   let matrixLabel = new Array(img.length + w).fill(0);
-  let pixelValue = 0;
-  img_copy.map( function(value, index) {
-      pLabel = matrixLabel[index];
-      pixelValue = (value === 255) ? toto(label) : 0;
-        //   (img_copy[index-w] === 0 && pLabel === 0) ? function(){
-        //       matrixLabel[index] = label;
-        //       tracerRecursif(img_copy, w, h, [1, [int(index/w), index%w]], [1, [int(index/w), index%w]], null, matrixLabel, label);
-        //       label++;} : null;
-    //
-    //     (img_copy[index+w] === 0 && matrixLabel[index+w] != -1)? function(){
-    //         (pLabel === 0)? function(){
-    //             pLabel = matrixLabel[index-1];
-    //             matrixLabel[index] = matrixLabel[index-1];
-    //         } : null;
-    //         tracerRecursif(img_copy, w, h, [5, [int(index/w), index%w]], [5, [int(index/w), index%w]], null, matrixLabel, pLabel);
-    //     } : null;
-    //    } : null;
-        return pixelValue;
-    });
-    return matrixLabel;
 
-  // for(let i=1;i<h+1;i++){
-  //   for(let j=0;j<w;j++){
-  //     let p = img_copy[i * w + j];
-  //     let pLabel = matrixLabel[i * w + j];
-  //     console.log("checking pixel at " + (i-1) + ", " + j);
-  //     if(p === 255){
-  //       console.log("pixel is black");
-  //       //Checking if the black pixel has a white pixel above. If that is the
-  //       //case, it must be an external contour and we execute contour tracing
-  //       if(img_copy[(i-1) * w + j] === 0 && pLabel === 0){
-  //         console.log("pixel is from external contour");
-  //         matrixLabel[i * w + j] = label;
-  //         tracerRecursif(img_copy, w, h, [1, [i, j]], [1, [i, j]], null, matrixLabel, label)
-  //         label += 1;
-  //       }
-  //       //Checking if the pixel under is white. Then it must be an internal
-  //       //contour. We execute contour tracing for the internal contour.
-  //       else if (img_copy[(i+1) * w + j] === 0 && matrixLabel[(i+1) * w + j] != -1) {
-  //         console.log("pixel is from internal contour");
-  //         if(pLabel === 0){
-  //           console.log(matrixLabel[i * w + j -1]);
-  //           pLabel = matrixLabel[i * w + j -1];
-  //           matrixLabel[i * w + j] = matrixLabel[i * w + j -1];
-  //         }
-  //         let tmp = tracerRecursif(img_copy, w, h, [5, [i, j]], [5, [i, j]], null, matrixLabel, pLabel)
-  //       }
-  //     }
-  //   }
-  // }
-  // console.log(`labelling`);
-  // return matrixLabel;
-}
-
-const toto = function(label){
-    return label;
+  for(let i=1;i<h+1;i++){
+    for(let j=0;j<w;j++){
+      let p = img_copy[i * w + j];
+      let pLabel = matrixLabel[i * w + j];
+      console.log("checking pixel at " + (i-1) + ", " + j);
+      if(p === 255){
+        console.log("pixel is black");
+        //Checking if the black pixel has a white pixel above. If that is the
+        //case, it must be an external contour and we execute contour tracing
+        if(img_copy[(i-1) * w + j] === 0 && pLabel === 0){
+          console.log("pixel is from external contour");
+          matrixLabel[i * w + j] = label;
+          tracerRecursif(img_copy, w, h, [1, [i, j]], [1, [i, j]], null, matrixLabel, label)
+          label += 1;
+        }
+        //Checking if the pixel under is white. Then it must be an internal
+        //contour. We execute contour tracing for the internal contour.
+        else if (img_copy[(i+1) * w + j] === 0 && matrixLabel[(i+1) * w + j] != -1) {
+          console.log("pixel is from internal contour");
+          if(pLabel === 0){
+            console.log(matrixLabel[i * w + j -1]);
+            pLabel = matrixLabel[i * w + j -1];
+            matrixLabel[i * w + j] = matrixLabel[i * w + j -1];
+          }
+          let tmp = tracerRecursif(img_copy, w, h, [5, [i, j]], [5, [i, j]], null, matrixLabel, pLabel)
+        }
+        else{
+            matrixLabel[i * w + j] = matrixLabel[i * w + j -1];
+        }
+      }
+    }
+  }
+  console.log(`labelling`);
+  return matrixLabel;
 }
 
 const tracerRecursif = function(img, w, h, previous, origin, second, labelMatrix, label){
+    console.log("Entering Tracer");
   let i = previous[1][0];
   let j = previous[1][1];
   let rotationMatrixI = [0, 1, 1, 1, 0, -1, -1, -1];
@@ -116,21 +121,31 @@ const tracerRecursif = function(img, w, h, previous, origin, second, labelMatrix
   let rotationIndex = (previous[0] + 6) % 8;
   let neighbor = [];
   for(let r=0;r<8;r++){
-    if(img[(i+rotationMatrixI[rotationIndex]) * w + j+rotationMatrixJ[rotationIndex]] === 255){
-      labelMatrix[(i+rotationMatrixI[rotationIndex]) * w + j+rotationMatrixJ[rotationIndex]] = label;
-      neighbor.push(rotationIndex);
-      neighbor.push([i+rotationMatrixI[rotationIndex], j+rotationMatrixJ[rotationIndex]]);
-      if (second === null){
-        second = [rotationIndex, [i+rotationMatrixI[rotationIndex], j+rotationMatrixJ[rotationIndex]]];
-      }
-      else if (JSON.stringify(neighbor[1]) === JSON.stringify(second[1]) && JSON.stringify(previous[1]) === JSON.stringify(origin[1])){
-        return null;
-      }
-      tracerRecursif(img, w, h, neighbor, origin, second, labelMatrix, label);
-      return null;
-    }
-    else{
-      labelMatrix[(i+rotationMatrixI[rotationIndex]) * w + j+rotationMatrixJ[rotationIndex]] = -1;
+      console.log(rotationIndex);
+     if(0 <= i+rotationMatrixI[rotationIndex] <= h && 0 <= j+rotationMatrixJ[rotationIndex] < w){ //i+rotationMatrixI[rotationIndex] >= 0
+        if(img[(i+rotationMatrixI[rotationIndex]) * w + j+rotationMatrixJ[rotationIndex]] === 255){
+            console.log("Giving label to : " + JSON.stringify((i+rotationMatrixI[rotationIndex])) + "," + JSON.stringify(j+rotationMatrixJ[rotationIndex]));
+          labelMatrix[(i+rotationMatrixI[rotationIndex]) * w + j+rotationMatrixJ[rotationIndex]] = label;
+          neighbor.push(rotationIndex);
+          neighbor.push([i+rotationMatrixI[rotationIndex], j+rotationMatrixJ[rotationIndex]]);
+          if (second === null){
+            second = [rotationIndex, [i+rotationMatrixI[rotationIndex], j+rotationMatrixJ[rotationIndex]]];
+          }
+          else if (JSON.stringify(neighbor[1]) === JSON.stringify(second[1]) && JSON.stringify(previous[1]) === JSON.stringify(origin[1])){
+            return null;
+          }
+        //   console.log("neighbor" + JSON.stringify(neighbor[1]));
+        //   console.log("second" + JSON.stringify(second[1]));
+        //   console.log("previous" + JSON.stringify(previous[1]));
+        //   console.log("origin" + JSON.stringify(origin[1]));
+          //prompt();
+          tracerRecursif(img, w, h, neighbor, origin, second, labelMatrix, label);
+          return null;
+        }
+        else{
+            console.log("Giving -1 to " + JSON.stringify((i+rotationMatrixI[rotationIndex])) + "," + JSON.stringify(j+rotationMatrixJ[rotationIndex]));
+          labelMatrix[(i+rotationMatrixI[rotationIndex]) * w + j+rotationMatrixJ[rotationIndex]] = -1;
+        }
     }
     rotationIndex = (rotationIndex + 1) % 8;
   }
