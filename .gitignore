@@ -4,5 +4,6 @@
 **/*.*~
 **/*.old
 
-node_modules/
-gh-pages/
+TINY
+javascripts
+css
