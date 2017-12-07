@@ -77,7 +77,7 @@ const labelling = function (img,copy=true) {
   let w = img.width;
   let h = img.height;
   // Creating a copy of the image that has a extra white row at the top
-  let img_copy = Array.from(null, Array(w)).map(Number.prototype.valueOf,0);
+  let img_copy = Array.apply(null, Array(w)).map(Number.prototype.valueOf,0);
   img.getRaster().pixelData.map( value => img_copy.push(value));
 
   let label = 1;
@@ -95,23 +95,18 @@ const labelling = function (img,copy=true) {
 const tracerRecursif = function(img, w, h, previous, origin, second, labelMatrix, label){
 
     function checkIfNeighbor(){
+        isNeighbor = false;
         (img[(i+rotationMatrixI[rotationIndex]) * w + j+rotationMatrixJ[rotationIndex]] === 255) ? (
             console.log("Giving label to : " + JSON.stringify((i+rotationMatrixI[rotationIndex])) + "," + JSON.stringify(j+rotationMatrixJ[rotationIndex])),
             labelMatrix[(i+rotationMatrixI[rotationIndex]) * w + j+rotationMatrixJ[rotationIndex]] = label,
             neighbor.push(rotationIndex),
             neighbor.push([i+rotationMatrixI[rotationIndex], j+rotationMatrixJ[rotationIndex]]),
-            (second === null) ? (
-                second = [rotationIndex, [i+rotationMatrixI[rotationIndex], j+rotationMatrixJ[rotationIndex]]],
-                console.log(second),
-                prompt()
-            ) : (
-                isItOver = (JSON.stringify(neighbor[1]) === JSON.stringify(second[1]) && JSON.stringify(previous[1]) === JSON.stringify(origin[1]))
-            )
+            isNeighbor = true
         ) : (
             console.log("Giving -1 to " + JSON.stringify((i+rotationMatrixI[rotationIndex])) + "," + JSON.stringify(j+rotationMatrixJ[rotationIndex])),
             labelMatrix[(i+rotationMatrixI[rotationIndex]) * w + j+rotationMatrixJ[rotationIndex]] = -1
         );
-          return null;
+          return isNeighbor;
     }
 
   let i = previous[1][0];
@@ -120,23 +115,41 @@ const tracerRecursif = function(img, w, h, previous, origin, second, labelMatrix
   let rotationMatrixJ = [1, 1, 0, -1, -1, -1, 0, 1];
   let rotationIndex = (previous[0] + 6) % 8;
   let neighbor = [];
+  let isNeighbor = false;
   let isItOver = false;
-  (JSON.stringify(neighbor[1]) === JSON.stringify(second[1]) && JSON.stringify(previous[1]) === JSON.stringify(origin[1]))
+  let firstPass = true;
 
-  for(let r=0;r<8;r++){
-      console.log(rotationIndex);
-      prompt();
-      (0 <= i+rotationMatrixI[rotationIndex] <= h && 0 <= j+rotationMatrixJ[rotationIndex] < w) ? checkIfNeighbor() : false;
-      (isItOver) ? r = 9 : (
-          console.log("neighbor" + JSON.stringify(neighbor[1])),
-            console.log("second" + JSON.stringify(second)),
-            console.log("previous" + JSON.stringify(previous[1])),
-            console.log("origin" + JSON.stringify(origin[1])),
-          prompt(),
-          tracerRecursif(img, w, h, neighbor, origin, second, labelMatrix, label)
-      );
-    rotationIndex = (rotationIndex + 1) % 8;
+  while(isItOver === false){
+      for(let r=0;r<8;r++){
+          isNeighbor = (0 <= i+rotationMatrixI[rotationIndex] <= h && 0 <= j+rotationMatrixJ[rotationIndex] < w) ? checkIfNeighbor() : false;
+          isNeighbor ?
+              (firstPass = (second === null) ? second = [rotationIndex, [i+rotationMatrixI[rotationIndex], j+rotationMatrixJ[rotationIndex]]] : false
+          ) : null;
+          isItOver = firstPass ? false : (JSON.stringify(neighbor[1]) === JSON.stringify(second[1]) && JSON.stringify(previous[1]) === JSON.stringify(origin[1]));
+          console.log("neighbor" + JSON.stringify(neighbor[1]));
+          console.log("second" + JSON.stringify(second));
+          console.log("previous" + JSON.stringify(previous[1]));
+          console.log("origin" + JSON.stringify(origin[1]));
+          prompt();
+          rotationIndex = (rotationIndex + 1) % 8;
+      }
+      isItOver = true;
   }
+
+
+  //     console.log(rotationIndex);
+  //     prompt();
+  //
+  //     (isItOver) ? r = 9 : (
+  //         console.log("neighbor" + JSON.stringify(neighbor[1])),
+  //           console.log("second" + JSON.stringify(second)),
+  //           console.log("previous" + JSON.stringify(previous[1])),
+  //           console.log("origin" + JSON.stringify(origin[1])),
+  //         prompt(),
+  //         tracerRecursif(img, w, h, neighbor, origin, second, labelMatrix, label)
+  //     );
+  //
+  // }
   return null;
 }
 
@@ -157,8 +170,9 @@ const measure = function (params) {
   }
 }
 
-let img = new T.Image('uint8', 8, 8);
+let img = new T.Image('uint8', 3, 3);
 //let pixelData = [255, 255, 255, 255, 255, 0, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
+//let pixelData = [0, 0, 0, 0, 255, 255, 0, 0, 0]
 let pixelData = [
   0, 255, 255, 255, 255, 255, 0, 255,
   0, 255, 0, 0, 0, 255, 0, 0,
