@@ -154,7 +154,7 @@ win0.addToDOM('workspace');
 result = labelling(img);
 for(let i=0;i<result.length;i++){
     if (result[i] == undefined){
-        result[i] = 255;
+        result[i] = 0;
     }
 }
 // show(result, img.height, img.width)
