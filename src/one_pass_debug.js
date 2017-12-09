@@ -41,6 +41,7 @@
 const labelling = function (img,copy=true) {
 
     function checkPixelAbove(index){
+        console.log("checkPixelAbove");
         return (img_copy[index-w] === 0 && pLabel === 0) ? labelOuterCountour(index) : checkPixelUnder(index);
     }
 
@@ -49,6 +50,8 @@ const labelling = function (img,copy=true) {
     }
 
     function labelOuterCountour(index){
+        console.log("OuterCountour");
+        console.log("Labelling starting at " + JSON.stringify(Math.floor(index/w)) + "," + JSON.stringify((index)%w));
         matrixLabel[index] = label;
         contourTracing(img_copy, w, h, [Math.floor(index/w), (index)%w], 7, matrixLabel, label);
         label++;
@@ -56,6 +59,8 @@ const labelling = function (img,copy=true) {
     }
 
     function labelInnerCountour(index){
+        console.log("InnerCountour");
+        console.log("Labelling starting at " + JSON.stringify(Math.floor(index/w)) + "," + JSON.stringify((index)%w));
         checkPixel();
         contourTracing(img_copy, w, h, [Math.floor(index/w), (index)%w], 3, matrixLabel, pLabel);
         return true;
@@ -78,8 +83,10 @@ const labelling = function (img,copy=true) {
 
   let label = 1;
   let matrixLabel = new Array(img.length + w).fill(0);
+  console.log(matrixLabel);
 
   img_copy.map( function(value, index) {
+      console.log("checking Pixel");
       pLabel = matrixLabel[index];
       (value === 255) ? checkPixelAbove(index) : null;
     });
@@ -87,14 +94,26 @@ const labelling = function (img,copy=true) {
 }
 
 const contourTracing = function(img, w, h, origin, angle, matrixLabel, label){
+  console.log("entering contourTracing");
+  console.log(angle);
   let second;
   let tmp;
   tmp = tracer(img, w, h, origin[0], origin[1], angle, matrixLabel);
+  console.log(tmp);
   (tmp != null) ? (
     second = tmp.slice(1, 3),
     angle = (tmp[0] + 6) % 8) : null;
   let nextPixel = second;
   let previousPixel;
+  console.log("origin :")
+  console.log(origin);
+  console.log("previous :");
+  console.log(previousPixel);
+  console.log("second :");
+  console.log(second);
+  console.log("nextpixel :");
+  console.log(nextPixel);
+  console.log(angle);
   while (second != null && !((JSON.stringify(origin) === JSON.stringify(previousPixel)) && (JSON.stringify(second) === JSON.stringify(nextPixel)))){
     previousPixel = nextPixel;
     tmp = tracer(img, w, h, nextPixel[0], nextPixel[1], angle, matrixLabel);
@@ -103,19 +122,35 @@ const contourTracing = function(img, w, h, origin, angle, matrixLabel, label){
       angle = (tmp[0] + 6) % 8,
       matrixLabel[nextPixel[0] * w + nextPixel[1]] = label
     ) : null;
+    console.log("origin :")
+    console.log(origin);
+    console.log("previous :");
+    console.log(previousPixel);
+    console.log("second :");
+    console.log(second);
+    console.log("nextpixel :");
+    console.log(nextPixel);
+    console.log(angle);
+    //prompt();
   }
 }
 
 const tracer = function(img, w, h, i, j, angle, matrixLabel){
+  console.log("in tracer ****************");
   let rotationMatrixI = [0, 1, 1, 1, 0, -1, -1, -1];
   let rotationMatrixJ = [1, 1, 0, -1, -1, -1, 0, 1];
+  //let rotationIndex = (angle + 6) % 8;
   let result = null;
   rotationMatrixI.forEach( function(element){
     (result === null) ? (
+    console.log("checking neighbor"),
     nextI = i+rotationMatrixI[angle],
     nextJ = j+rotationMatrixJ[angle],
+    console.log(nextI),
+    console.log(nextJ),
     (0 <= nextI && nextI <= h && 0 <= nextJ && nextJ < w ) ? (
       (img[nextI * w + nextJ] === 255) ? (
+        console.log("found black pixel"),
         result = [angle, nextI, nextJ]
       ) : (
         matrixLabel[nextI * w + nextJ] = -1
@@ -124,6 +159,9 @@ const tracer = function(img, w, h, i, j, angle, matrixLabel){
     angle = (angle + 1) % 8
   ) : null;
   });
+  console.log("result = ");
+  console.log(result);
+  //prompt();
   return result;
 
 }
