@@ -40,17 +40,37 @@ const labelling = function (img,copy=true) {
     let listePixel = new Array(); // Liste pour parcourir l'image
     let label = 1;
     let labelData = new Array(img.height*img.width); // liste vide pour stocker les labels affectés à chaque pixel
+    let width = img.width; // Largeur et taille de l'array
+    let length = pixelArray.length;
     for (let i = 0; i < pixelArray.length; i++) 
     {
-	if (pixelArray[i] == 255 && labelData[i] != undefined)
+	if (pixelArray[i] == 255 && labelData[i] == undefined)
 	{
-	    listePixel.push(pixelArray[i]);
+	    listePixel.push(i);
 	    labelData[i] = label;
 	    while (listePixel != 0)
 	    {
+		let indice = listePixel[0]; // stocke la valeur du premier pixel dans une variable avant de la supprimer
 		delete listePixel.splice[0];
-	    }
+		let ind_up = indice - width;
+		let ind_down = indice + width;
+		let ind_right = ((indice + 1) % width == 0) ? undefined : indice + 1;
+		let ind_left = (indice % width == 0) ? undefined : indice - 1;
+		let listeIndice = [ind_up,ind_down,ind_right,ind_left];
+		for(ind_voisin in listeIndice)
+		{
+		    	if (pixelArray[ind_voisin] == 255 && labelData[ind_voisin == undefined)
+		{
+		    listePixel.push(ind_voisin);
+		    labelData[ind_voisin] = label;
+		}
+		}
+	
+		
+		
+		
 
+	    }
 
 	}
 	//console.log(pixelArray[i]);
