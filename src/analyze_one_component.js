@@ -1,4 +1,4 @@
-*  TIMES: Tiny Image ECMAScript Application
+/*  TIMES: Tiny Image ECMAScript Application
  *  Copyright (C) 2017  Jean-Christophe Taveau.
  *
  *  This file is part of TIMES
@@ -34,9 +34,35 @@
  * @author TODO
  */
 const labelling = function (img,copy=true) {
-  // TODO
-  console.log(labelling);
-  return TRaster.from(img,copy);
+    let raster = img.getRaster();
+    let pixelArray = raster.pixelData;
+    console.log(pixelArray)
+    let listePixel = new Array(); // Liste pour parcourir l'image
+    let label = 1;
+    let labelData = new Array(img.height*img.width); // liste vide pour stocker les labels affectés à chaque pixel
+    for (let i = 0; i < pixelArray.length; i++) 
+    {
+	if (pixelArray[i] == 255 && labelData[i] != undefined)
+	{
+	    listePixel.push(pixelArray[i]);
+	    labelData[i] = label;
+	    while (listePixel != 0)
+	    {
+		delete listePixel.splice[0];
+	    }
+
+
+	}
+	//console.log(pixelArray[i]);
+	console.log(listePixel);
+	//console.log(labelData);
+    }
+    
+    
+    
+    
+  
+  //return TRaster.from(img,copy);
 }
 
 /**
@@ -51,7 +77,21 @@ const labelling = function (img,copy=true) {
 const measure = function (params) {
   return function (roiset,copy=true) {
     // TODO
-    console.log(measure ${params});
-    return new TMeasurements();
+    //console.log(measure ${params});
+    //return new TMeasurements();
   }
 }
+
+let img = new T.Image('uint8', 8, 8);
+
+let pixelData = [
+  0, 255, 255, 255, 255, 255, 0, 255,
+  0, 255, 0, 0, 0, 255, 0, 0,
+  0, 255, 255, 0, 0, 255, 255, 0,
+  0, 255, 255, 255, 255, 255, 255, 255,
+  0, 255, 255, 255, 255, 255, 255, 0,
+  0, 255, 255, 255, 255, 255, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0,
+  255, 0, 255, 0, 0, 0, 0, 0];
+ img.setPixels(pixelData);
+result = labelling(img);
