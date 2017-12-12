@@ -87,7 +87,7 @@ const new_label = function(union_find){
  * @param {type} roiset - A set of ROIs
  * @param {boolean} copy - Useless. Just here for compatibility
  * @return {type} Measurements and/or result image
- * @author TODO
+ * @author Jean Mainguy
  */
 const measure = function (params) {
   return function (roiset,copy=true) {
@@ -118,62 +118,3 @@ const show = function(result, h, w){
     }
     console.log(line);
 }
-
-console.log("labelling 2 pass");
-
-
-let img = new T.Image('uint8',100,100);
-img.setPixels(img_binary);
-let win0 = new T.Window('Binary');
-let view0 = T.view(img.getRaster());
-// Create the window content from the view
-win0.addView(view0);
-// Add the window to the DOM and display it
-win0.addToDOM('workspace');
-
-
-// data = [
-//   0, 255, 255, 255, 255, 255, 0, 0, 0, 0,
-//   0, 255, 0, 0, 0, 255, 255, 0, 0, 0,
-//   0, 255, 255, 0, 0, 255, 255, 0, 0, 0,
-//   0, 255, 255, 255, 255, 255, 255, 0, 0, 0,
-//   0, 255, 255, 255, 255, 255, 255, 0, 0, 0,
-//   0, 255, 255, 255, 255, 255, 0, 0, 0, 0,
-//   0, 0, 0, 0, 0, 255, 0, 0, 0, 0,
-//   0, 0, 0, 0, 0, 255, 255, 0, 0, 0,
-//   0, 0, 0, 255, 255, 0, 0, 0, 0, 0,
-//   0, 0, 255, 255, 0, 0, 0, 0, 0, 0];
-//
-// let img;
-// img = new T.Image('uint8',10,10);
-
-
-// img.setPixels(data);
-
-
-result = labelling(img);
-for(let i=0;i<result.length;i++){
-    if (result[i] == undefined){
-        result[i] = 0;
-    }
-}
-// show(result, img.height, img.width)
-// result = result.map(function(i){i*50})
-show(result, img.height, img.width)
-let img_result = new T.Image('uint8',100,100);
-img.setPixels(result);
-let win1 = new T.Window('Binary result');
-let view1 = T.view(img_result.getRaster());
-// Create the window content from the view
-win1.addView(view1);
-// Add the window to the DOM and display it
-win1.addToDOM('workspace');
-// show(result, img.height, img.width)
-
-
-// let win1 = new T.Window('Labbeling');
-// let view1 = T.view(img.getRaster());
-// Create the window content from the view
-// win0.addView(view0);
-// // Add the window to the DOM and display it
-// win0.addToDOM('workspace');
