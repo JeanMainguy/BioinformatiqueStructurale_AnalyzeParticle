@@ -30,7 +30,7 @@
  * Finds the objects in an image and return an object containing lists of coordinates such as :
  * o = {1:[[1, 1], [2, 1]], 2:[[4, 4]]}
  * 8-connected components
- * Implementing the algorithm from Chang et al. (2003)
+ * Implementing the algorithm from Chang et al. (2003) http://www.iis.sinica.edu.tw/papers/fchang/1362-F.pdf
  *
  * @param {TRaster} img - Input image
  * @param {boolean} copy - Copy mode
@@ -145,6 +145,20 @@ const measure = function (params) {
   }
 }
 
+const fitEllipse = function(img){
+  //Source : http://www.sciencedirect.com/science/article/pii/S0191814103000932?via%3Dihub
+}
+
+const area = function (particule){
+  return particule.reduce( (number) => number+=1);
+}
+
+const centerOfMass = function(particule){
+  let Xs = particule.reduce( ((totalX, pixel) => totalX + pixel[0]), 0);
+  let Ys = particule.reduce( ((totalY, pixel) => totalY += pixel[1]), 0);
+  return ([Math.round(Xs / particule.length), Math.round(Ys / particule.length)]);
+}
+
 let img = new T.Image('uint8', 8, 8);
 //let pixelData = [255, 255, 255, 255, 255, 0, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255];
 //let pixelData = [255, 255, 255, 255, 0, 255, 255, 255, 255];
@@ -168,5 +182,9 @@ console.log(img);
 for(let i=0;i<img.length+img.height;i+=img.height){
   console.log(result.slice(i, (i+img.width)));
 }
+
+console.log(area([(1,1), (2,1), (2, 2)]));
+console.log(centerOfMass([[1,1], [2,1], [2,2]]));
+
 //console.log(result);
 //console.log(img)
