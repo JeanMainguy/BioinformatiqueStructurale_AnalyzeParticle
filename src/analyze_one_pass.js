@@ -34,54 +34,49 @@
  *
  * @param {TRaster} img - Input image
  * @param {boolean} copy - Copy mode
- * @return {type} A set of Regions Of Interest (ROI)
- * @author TODO
+ * @return {type} A set of Regions Of Interest (ROI) as a list of lists of coordinates
+ * @author Martin Binet
  */
 
 const labelling = function (img,copy=true) {
 
-    function checkPixelAbove(index){
-        return (img_copy[index-w] === 0 && pLabel === 0) ? labelOuterCountour(index) : checkPixelUnder(index);
-    }
-
-    function checkPixelUnder(index){
-        (img_copy[index+w] === 0 && matrixLabel[index+w] != -1)? labelInnerCountour(index) : checkPixel(index);
-    }
-
     function labelOuterCountour(index){
+      // lance le tracer pour le pourtour extérieur de la particule
         matrixLabel[index] = label;
         contourTracing(img_copy, w, h, [Math.floor(index/w), (index)%w], 7, matrixLabel, label);
         label++;
-        return true;
     }
 
     function labelInnerCountour(index){
+      // lance le traceur pour le pourtour intérieur de la particule
         checkPixel();
         contourTracing(img_copy, w, h, [Math.floor(index/w), (index)%w], 3, matrixLabel, pLabel);
-        return true;
-    }
-
-    function giveLabel(index){
-        pLabel = matrixLabel[index-1];
-        matrixLabel[index] = matrixLabel[index-1];
     }
 
     function checkPixel(index){
-        (pLabel === 0)? giveLabel(index) : null;
+      // Si le pixel n'est pas labélisé, lui donne le label de son voisin de gauche
+        (pLabel === 0)? (
+          pLabel = matrixLabel[index-1],
+          matrixLabel[index] = matrixLabel[index-1]
+        ) : null;
     }
 
   let w = img.width;
   let h = img.height;
-  // Creating a copy of the image that has a extra white row at the top
+  // Création d'une copie de l'image avec une ligne suplémentaire de pixels blanc au dessus
   let img_copy = Array.apply(null, Array(w)).map(Number.prototype.valueOf,0);
-  img.getRaster().pixelData.map( value => img_copy.push(value));
+  img.getRaster().pixelData.forEach( value => img_copy.push(value));
 
   let label = 1;
   let matrixLabel = new Array(img.length + w).fill(0);
 
-  img_copy.map( function(value, index) {
+  img_copy.forEach( function(value, index) {
       pLabel = matrixLabel[index];
-      (value === 255) ? checkPixelAbove(index) : null;
+      (value === 255) ? (
+        (img_copy[index-w] === 0 && pLabel === 0) ? (labelOuterCountour(index)) : (
+          (img_copy[index+w] === 0 && matrixLabel[index+w] != -1)? labelInnerCountour(index) : checkPixel(index)
+        )
+      ) : null;
     });
     return matrixLabel;
 }
@@ -147,6 +142,7 @@ const measure = function (params) {
 
 const fitEllipse = function(img){
   //Source : http://www.sciencedirect.com/science/article/pii/S0191814103000932?via%3Dihub
+  //http://nicky.vanforeest.com/misc/fitEllipse/fitEllipse.html
 }
 
 const area = function (particule){
@@ -185,6 +181,3 @@ for(let i=0;i<img.length+img.height;i+=img.height){
 
 console.log(area([(1,1), (2,1), (2, 2)]));
 console.log(centerOfMass([[1,1], [2,1], [2,2]]));
-
-//console.log(result);
-//console.log(img)
