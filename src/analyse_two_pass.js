@@ -37,43 +37,45 @@
 const labelling = function (img,copy=true) {
 
   let raster = img.getRaster();
-  union_find = {label_cmpt:0};
+  union_find = {label_cmpt:0, 0:0};
 
   let label_img = new Array(img.height*img.width); //empty array that will contain labels of the pixels
-
+  label_img.fill(0)
   // First Pass
-  raster.pixelData.map(function(pix, i){
+  raster.pixelData.forEach(function(pix, i){
     pix == 255 ? label_pix(i, label_img, raster.width, union_find) : undefined;
-  });
+});
 
   // Second Pass
   label_img = label_img.map(function(label, i){return union_find[label_img[i]]})
-  console.log(union_find);
+
+
+
   return label_img;
 }
 
 const label_pix = function(i, label_img, w, union_find) {
 
-    let label_up = label_img[i-w]; //store label of pixel above i. may bereal label or undefined/null
-    let label_left = i % w == 0 ? undefined : label_img[i-1]; // store label of pixel right before i. may be real label or undefined/null
+    let label_up = i-w < 0 ? 0 : label_img[i-w]; //store label of pixel above i. may bereal label or undefined/null
+    let label_left = i % w == 0 ? 0 : label_img[i-1]; // store label of pixel right before i. may be real label or undefined/null
 
-    let label_i = label_up !== undefined && label_left !== undefined ? (
-        notify_union_find(label_up, label_left, union_find), //va notifier meme si les deux label sont pareil donc c'est pas top..
-        label_up > label_left ? label_left : label_up
-
-    ) : (
-        label_up == undefined && label_left == undefined ? (
-            new_label(union_find)
+    let label_i = label_up !== 0 && label_left !== 0 ? ( //
+            notify_union_find(label_up, label_left, union_find), //if the label up and label rigth are labbeled then the union find structure is notify
+            label_up > label_left ? label_left : label_up  // label_i (label of the current pixel analysed) take the smalest label of the neigbor
         ) : (
-            label_up == undefined ? label_left : label_up
-        )
-    );
+            label_up == 0 && label_left == 0 ? (
+                new_label(union_find) // if the two the pixels up and left are backgrounf pixel then a new label is provided to label_i
+                ) : (
+                label_up == 0 ? label_left : label_up // and finally if the only one neighbor is label, label_i get this label
+                    )
+            );
     label_img[i] = label_i;
 }
 
 const notify_union_find = function(labelA, labelB, union_find){
     labelA < labelB ? (union_find[labelB] = union_find[labelA]) : (union_find[labelA] = union_find[labelB]);
 }
+
 const new_label = function(union_find){
     union_find.label_cmpt ++;
     union_find[union_find.label_cmpt] = union_find.label_cmpt;
@@ -96,6 +98,34 @@ const measure = function (params) {
     return new TMeasurements();
   }
 }
+
+
+const convert_index_to_xy_particle = function (labbeling_img, raster){
+    function is_background(index){
+        return index != 0;
+    }
+    function add_xy_to_dict(index, label, raster){
+
+        // if(listparticle.hasOwnProperty(label)){
+        //     listparticle[label].push(raster.xy(index));
+        // }
+        // else {
+        //     listparticle[label] =  new Array(raster.xy(index));
+        // }
+        listparticle.hasOwnProperty(label) ? ( listparticle[label].push(raster.xy(index)) ):( listparticle[label] =  new Array(raster.xy(index)));
+    }
+    let listparticle = new Object();
+    labbeling_img.forEach(function(label, index){
+        // console.log(label);
+        // console.log(listparticle);
+        label != 0 ? add_xy_to_dict(index, label, raster) : undefined;
+    })
+    console.log(listparticle);
+    console.log(listparticle.keys.length);
+}
+
+
+
 
 const show = function(result, h, w){
     let line = "";
