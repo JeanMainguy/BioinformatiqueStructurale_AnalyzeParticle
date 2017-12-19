@@ -20,7 +20,15 @@ result = labelling(img);
 console.log("RESULT ");
 console.log(result);
 
-convert_index_to_xy_particle(result, img.getRaster())
+let particle_list = convert_index_to_xy_particle(result, img.getRaster());
+
+console.log("AREA");
+console.log(area(particle_list[1]));
+console.log(particle_list[1]);
+console.log(particle_list[1].length);
+
+console.log(bundingRectangle(particle_list[1]));
+
 
 // show(result, img.height, img.width)
 // result = result.map(function(i){i*50})

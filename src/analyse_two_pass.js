@@ -120,12 +120,29 @@ const convert_index_to_xy_particle = function (labbeling_img, raster){
         // console.log(listparticle);
         label != 0 ? add_xy_to_dict(index, label, raster) : undefined;
     })
-    console.log(listparticle);
-    console.log(listparticle.keys.length);
+    return listparticle;
 }
 
 
+const area = function (particule){
+  return particule.reduce( (number) => number+=1);
+}
 
+const bundingRectangle = function(particule){
+  console.log("particule",particule);
+  let extrem = {xmin:particule[0][0], xmax:particule[0][0], ymin:particule[0][1], ymax:particule[0][1]};
+
+
+  particule.reduce(function(extrem,coord){
+    extrem.xmin = extrem.xmin > coord[0] ? coord[0] : extrem.xmin;
+    extrem.xmax = extrem.xmax < coord[0] ? coord[0] : extrem.xmax;
+    extrem.ymin = extrem.ymin > coord[1] ? coord[1] : extrem.ymin;
+    extrem.ymax = extrem.ymax < coord[1] ? coord[1] : extrem.ymax;
+    return extrem;
+  }, extrem);
+  console.log("extrem", extrem);
+  return {width:extrem.xmax-extrem.xmin+1, height:extrem.ymax-extrem.ymin+1, bx:extrem.xmin, by:extrem.ymin }
+}
 
 const show = function(result, h, w){
     let line = "";
