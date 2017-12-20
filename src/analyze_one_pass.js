@@ -31,8 +31,17 @@
  * o = {1:[[1, 1], [2, 1]], 2:[[4, 4]]}
  * 8-connected components
  * Implementing the algorithm from Chang et al. (2003) http://www.iis.sinica.edu.tw/papers/fchang/1362-F.pdf
+ * The algorithm goes through the image one pixel at a time, from top left to bottom right. When it finds a black pixel, there are three possibilities :
+ *          - The pixel is from an external contour
+ *          - The pixel is from an internal contour
+ *          - The pixel is not in a contour
+ * In the first case, it means the pixel has a white unlabeled pixel above it. Then the function contourTracing is called, and will label the whole contour of the particule.
+ * If the pixel is not in an external contour, and the pixel under it is white, then the same function as before, contourTracing, is called and will label the inner contour.
+ * Finally, if the pixel does not belong to any contour, it simply takes the label from its left neighbor.
  *
- * @param {TRaster} img - Input image
+ *
+ *
+ * @param {TImage} img - Input image
  * @param {boolean} copy - Copy mode
  * @return {type} A set of Regions Of Interest (ROI) as a list of lists of coordinates
  * @author Martin Binet
@@ -40,21 +49,21 @@
 
 const labelling = function (img,copy=true) {
 
-    function labelOuterCountour(index){
-      // lance le tracer pour le pourtour extérieur de la particule
+    function labelOuterContour(index){
+      // Starts the tracer for the outer contour of the particule
         matrixLabel[index] = label;
         contourTracing(img_copy, w, h, [Math.floor(index/w), (index)%w], 7, matrixLabel, label);
         label++;
     }
 
-    function labelInnerCountour(index){
-      // lance le traceur pour le pourtour intérieur de la particule
+    function labelInnerContour(index){
+      // Starts the tracer for the inner contour of the particule
         checkPixel();
         contourTracing(img_copy, w, h, [Math.floor(index/w), (index)%w], 3, matrixLabel, pLabel);
     }
 
     function checkPixel(index){
-      // Si le pixel n'est pas labélisé, lui donne le label de son voisin de gauche
+      // If the pixel has no label, it gets the same as its left neighbor
         (pLabel === 0)? (
           pLabel = matrixLabel[index-1],
           matrixLabel[index] = matrixLabel[index-1]
@@ -64,22 +73,44 @@ const labelling = function (img,copy=true) {
   let w = img.width;
   let h = img.height;
   // Création d'une copie de l'image avec une ligne suplémentaire de pixels blanc au dessus
+  // Creating a copy of the image with one extra row of white pixels on top
   let img_copy = Array.apply(null, Array(w)).map(Number.prototype.valueOf,0);
   img.getRaster().pixelData.forEach( value => img_copy.push(value));
 
+  // Initialization of the label and the matrix containing it
   let label = 1;
   let matrixLabel = new Array(img.length + w).fill(0);
 
   img_copy.forEach( function(value, index) {
       pLabel = matrixLabel[index];
       (value === 255) ? (
-        (img_copy[index-w] === 0 && pLabel === 0) ? (labelOuterCountour(index)) : (
-          (img_copy[index+w] === 0 && matrixLabel[index+w] != -1)? labelInnerCountour(index) : checkPixel(index)
+        (img_copy[index-w] === 0 && pLabel === 0) ? (labelOuterContour(index)) : (
+          (img_copy[index+w] === 0 && matrixLabel[index+w] != -1)? labelInnerContour(index) : checkPixel(index)
         )
       ) : null;
     });
+
     return matrixLabel;
 }
+
+/**
+ * Starting from a pixel belonging to a contour, calls the tracer function in a loop, and checks at each iteration if two conditions are true :
+ *          - The pixel returned by tracer is the same as the second pixel of the contour
+ *          - The previous pixel that was returned by tracer is the same as the initial pixel
+ * If both conditions are true, the function stops without returning anything.
+ *
+ *
+ *
+ * @param {TRaster} img - Input image
+ * @param {int} w - width of the input image
+ * @param {int} h - height of the input image
+ * @param {Array} origin - Coordinates x and y of the first pixel of the contour
+ * @param {int} angle - Angle at where to start looking for neighbor. This is used for the function tracer
+ * @param {Array} matrixLabel - current matrix contening the labeled objects
+ * @param {int} label - current label
+
+ * @author Martin Binet
+ */
 
 const contourTracing = function(img, w, h, origin, angle, matrixLabel, label){
   let second;
@@ -101,6 +132,24 @@ const contourTracing = function(img, w, h, origin, angle, matrixLabel, label){
   }
 }
 
+/**
+ * From a contour pixel, labels the next pixel in that contour and returns it
+ * This function uses the following rotation matrix :
+ * 5 6 7
+ * 4   0
+ * 3 2 1
+ * Starting from the input angle, it cheks each neighbor pixel until it finds a black one.
+ *
+ * @param {TImage} img - Input image
+ * @param {int} w - width of the input image
+ * @param {int} h - height of the input image
+ * @param {int} i - x coordinate of the middle pixel
+ * @param {int} j - y coordinate of the middle pixel
+ * @param {int} angle - angle at which to start the rotation
+ * @param {Array} matrixLabel - current matrix contening the labeled objects
+ * @return {Array} An array containing the angle at which the next pixel was found and its coordinates
+ * @author Martin Binet
+ */
 const tracer = function(img, w, h, i, j, angle, matrixLabel){
   let rotationMatrixI = [0, 1, 1, 1, 0, -1, -1, -1];
   let rotationMatrixJ = [1, 1, 0, -1, -1, -1, 0, 1];
@@ -154,30 +203,3 @@ const centerOfMass = function(particule){
   let Ys = particule.reduce( ((totalY, pixel) => totalY += pixel[1]), 0);
   return ([Math.round(Xs / particule.length), Math.round(Ys / particule.length)]);
 }
-
-let img = new T.Image('uint8', 8, 8);
-//let pixelData = [255, 255, 255, 255, 255, 0, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255];
-//let pixelData = [255, 255, 255, 255, 0, 255, 255, 255, 255];
-let pixelData = [
-  0, 255, 255, 255, 255, 255, 0, 255,
-  0, 255, 0, 0, 0, 255, 0, 0,
-  0, 255, 255, 0, 0, 255, 255, 0,
-  0, 255, 255, 255, 255, 255, 255, 255,
-  0, 255, 255, 255, 255, 255, 255, 0,
-  0, 255, 255, 255, 255, 255, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0,
-  255, 0, 255, 0, 0, 0, 0, 0];
-
-img.setPixels(pixelData);
-
-console.log(img.getRaster().pixelData);
-
-result = labelling(img);
-console.log(result);
-console.log(img);
-for(let i=0;i<img.length+img.height;i+=img.height){
-  console.log(result.slice(i, (i+img.width)));
-}
-
-console.log(area([(1,1), (2,1), (2, 2)]));
-console.log(centerOfMass([[1,1], [2,1], [2,2]]));

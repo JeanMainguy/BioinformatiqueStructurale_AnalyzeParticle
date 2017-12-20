@@ -37,51 +37,68 @@ const labelling = function (img,copy=true) {
     let raster = img.getRaster();
     let pixelArray = raster.pixelData;
     console.log(pixelArray)
-    let listePixel = new Array(); // Liste pour parcourir l'image
+    let listePixel = new Array(); // Liste vide pour parcourir l'image
     let label = 1;
-    let labelData = new Array(img.height*img.width); // liste vide pour stocker les labels affectés à chaque pixel
+    let labelData = new Array(img.height*img.width).fill(0); // liste vide pour stocker les labels affectés à chaque pixel
     let width = img.width; // Largeur et taille de l'array
     let length = pixelArray.length;
     for (let i = 0; i < pixelArray.length; i++) 
     {
-	if (pixelArray[i] == 255 && labelData[i] == undefined)
+	if (pixelArray[i] == 255 && labelData[i] == 0)
 	{
 	    listePixel.push(i);
 	    labelData[i] = label;
-	    while (listePixel != 0)
+	    console.log("labelData");
+	    console.log(labelData)
+	    while (listePixel.length != 0)
 	    {
 		let indice = listePixel[0]; // stocke la valeur du premier pixel dans une variable avant de la supprimer
-		delete listePixel.splice[0];
+		listePixel.shift();
+		console.log("listePixel avant de trouver les voisins");
+		console.log(indice);
+		console.log(listePixel);
 		let ind_up = indice - width;
 		let ind_down = indice + width;
 		let ind_right = ((indice + 1) % width == 0) ? undefined : indice + 1;
 		let ind_left = (indice % width == 0) ? undefined : indice - 1;
 		let listeIndice = [ind_up,ind_down,ind_right,ind_left];
-		for(ind_voisin in listeIndice)
+		console.log("listeIndice : ");
+		console.log(listeIndice);
+		console.log("labelData :");
+		console.log(labelData);
+		listeIndice.forEach(function(ind_voisin)
 		{
-		    	if (pixelArray[ind_voisin] == 255 && labelData[ind_voisin == undefined)
-		{
-		    listePixel.push(ind_voisin);
-		    labelData[ind_voisin] = label;
-		}
-		}
-	
+		    console.log(ind_voisin);
+		    console.log(pixelArray[ind_voisin]);
+		    console.log(labelData[ind_voisin]);
+		    console.log(pixelArray[ind_voisin] == 255 && labelData[ind_voisin] == 0);
+		    	if (pixelArray[ind_voisin] == 255 && labelData[ind_voisin] == 0)
+		    {
+			console.log("voisin trouvé");
+			console.log(ind_voisin);
+			listePixel.push(parseInt(ind_voisin));
+			labelData[parseInt(ind_voisin)] = label;
+		    }
+		});
+		console.log("listePixel apres test voisin");
+		    console.log(listePixel);
 		
 		
 		
 
 	    }
+	    label = label + 1;
 
-	}
+	    }
 	//console.log(pixelArray[i]);
-	console.log(listePixel);
+	//console.log(listePixel);
 	//console.log(labelData);
     }
     
     
     
     
-  
+    return labelData;
   //return TRaster.from(img,copy);
 }
 
@@ -105,7 +122,7 @@ const measure = function (params) {
 let img = new T.Image('uint8', 8, 8);
 
 let pixelData = [
-  0, 255, 255, 255, 255, 255, 0, 255,
+  0, 0, 255, 255, 255, 255, 0, 255,
   0, 255, 0, 0, 0, 255, 0, 0,
   0, 255, 255, 0, 0, 255, 255, 0,
   0, 255, 255, 255, 255, 255, 255, 255,
@@ -115,3 +132,4 @@ let pixelData = [
   255, 0, 255, 0, 0, 0, 0, 0];
  img.setPixels(pixelData);
 result = labelling(img);
+console.log(result);
