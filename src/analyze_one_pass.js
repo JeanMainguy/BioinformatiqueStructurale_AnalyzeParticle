@@ -140,7 +140,7 @@ const contourTracing = function(img, w, h, origin, angle, matrixLabel, label){
  * 3 2 1
  * Starting from the input angle, it cheks each neighbor pixel until it finds a black one.
  *
- * @param {TImage} img - Input image
+ * @param {TRaster} img - Input image
  * @param {int} w - width of the input image
  * @param {int} h - height of the input image
  * @param {int} i - x coordinate of the middle pixel
@@ -150,7 +150,7 @@ const contourTracing = function(img, w, h, origin, angle, matrixLabel, label){
  * @return {Array} An array containing the angle at which the next pixel was found and its coordinates
  * @author Martin Binet
  */
-const tracer = function(img, w, h, i, j, angle, matrixLabel){
+const tracer = function(img, w, h, i, j, angle, matrixLabel = null){
   let rotationMatrixI = [0, 1, 1, 1, 0, -1, -1, -1];
   let rotationMatrixJ = [1, 1, 0, -1, -1, -1, 0, 1];
   let result = null;
@@ -162,7 +162,9 @@ const tracer = function(img, w, h, i, j, angle, matrixLabel){
       (img[nextI * w + nextJ] === 255) ? (
         result = [angle, nextI, nextJ]
       ) : (
-        matrixLabel[nextI * w + nextJ] = -1
+        (matrixLabel != null) ? (
+            matrixLabel[nextI * w + nextJ] = -1
+        ) : null
       )
     ) : null,
     angle = (angle + 1) % 8
@@ -194,6 +196,202 @@ const fitEllipse = function(img){
   //http://nicky.vanforeest.com/misc/fitEllipse/fitEllipse.html
 }
 
+/**
+ * For each particule, takes the first pixel and create a chaincode of the boundary of the particule
+ * Beside the matrixLabel, function the same way as contourTracing
+ *
+ * @param {Array} img - Labelised Image
+ * @param {int} w - width of the input image
+ * @param {int} h - height of the input image
+ * @return {Array} First element is the coordinates of the starting pixel, the rests are angle values.
+
+ * @author Martin Binet
+ */
+const chainCode = function(img, particules, w, h){
+    let chaincodes = new Array();
+    let angle = 7;
+    particules.forEach( function(elem){
+        let origin = elem[0];
+        chaincodes.push(origin);
+        let second;
+        let tmp;
+        tmp = tracer(img, w, h, origin[0], origin[1], angle);
+        (tmp != null) ? (
+          second = tmp.slice(1, 3),
+          angle = (tmp[0] + 6) % 8) : null;
+        let nextPixel = second;
+        let previousPixel;
+        while (second != null && !((JSON.stringify(origin) === JSON.stringify(previousPixel)) && (JSON.stringify(second) === JSON.stringify(nextPixel)))){
+          previousPixel = nextPixel;
+          tmp = tracer(img, w, h, nextPixel[0], nextPixel[1], angle);
+          (tmp != null) ? (
+            nextPixel = tmp.slice(1, 3),
+            angle = (tmp[0] + 6) % 8,
+            chaincodes.push(angle)
+          ) : null;
+        }
+    })
+    return chaincodes;
+}
+
+const feretDiameter = function(particule){
+    let stepsize = 1//2.0*(Math.PI/180.0);
+    const rotation = [Math.cos(stepsize), Math.sin(stepsize)];
+    let directionsI = [0.0, 1.0, 1.0, 1.0, 0.0, -1.0, -1.0, -1.0];
+    let directionsJ = [1.0, 1.0, 0.0, -1.0, -1.0, -1.0, 0.0, 1.0];
+    //let directions = [[0, 1], [1, 1],[1, 0],[1, -1],[0, -1],[-1, -1],[-1, 0],[-1, 1]];
+    let maxDiameter = -Infinity;
+    let minDiameter = Infinity;
+    let minProjection = Infinity;
+    let maxAngle = 0;
+    let minAngle = 0;
+    let dir = particule.map( function(elem){
+        return [directionsI[elem], directionsJ[elem]];
+    });
+    console.log("dir");
+    console.log(dir);
+    let x = 0.0;
+    let y = 0.0;
+    let coords = dir.map( function(elem, i){
+        let result = (i === 0) ? elem : [x + elem[0], y + elem[1]];
+        x += elem[0];
+        y += elem[1];
+        return result;
+    });
+    for(let i=0;i<= 180;i+=stepsize){
+        console.log("coords");
+        console.log(coords);
+        let extrems = findExtrem(coords);
+        console.log("extrems");
+        console.log(extrems);
+        let size = [extrems.xmax - extrems.xmin + 1, extrems.ymax - extrems.ymin + 1];
+        console.log("size");
+        console.log(size);
+        (maxDiameter < size[0]) ? (
+            maxDiameter = size[0],
+            maxAngle = i
+        ) : null;
+        (maxDiameter < size[1]) ? (
+            maxDiameter = size[1],
+            maxAngle = i + 90
+        ) : null;
+        (minDiameter > size[0]) ? (
+            minDiameter = size[0],
+            minProjection = size[1],
+            minAngle = i
+        ) : null;
+        (minDiameter > size[1]) ? (
+            minDiameter = size[1],
+            minProjection = size[0],
+            minAngle = i + 90
+        ) : null;
+        newCoords = coords.map( function(elem){
+            return [elem[0] * Math.cos(stepsize) + elem[1] * Math.sin(stepsize), elem[1] * Math.sin(stepsize) - elem[0] * Math.cos(stepsize)];
+        });
+
+        coords = newCoords;
+
+        console.log("new directions");
+        console.log(directionsI);
+        console.log(directionsJ);
+    }
+    console.log("Object length : ");
+    console.log(maxDiameter);
+    console.log("at :");
+    console.log(maxAngle);
+    console.log("Minimum Bounding Box");
+    console.log(minDiameter);
+    console.log(minProjection);
+    console.log(minAngle);
+}
+
+const feretDiameter2 = function(particule){
+    let stepsize = 2//2.0*(Math.PI/180.0);
+    const rotation = [Math.cos(stepsize), Math.sin(stepsize)];
+    let directionsI = [0.0, 1.0, 1.0, 1.0, 0.0, -1.0, -1.0, -1.0];
+    let directionsJ = [1.0, 1.0, 0.0, -1.0, -1.0, -1.0, 0.0, 1.0];
+    //let directions = [[0, 1], [1, 1],[1, 0],[1, -1],[0, -1],[-1, -1],[-1, 0],[-1, 1]];
+    let maxDiameter = -Infinity;
+    let minDiameter = Infinity;
+    let minProjection = Infinity;
+    let maxAngle = 0;
+    let minAngle = 0;
+    for(let i=0;i < 90;i+=stepsize){
+        let dir = particule.map( function(elem){
+            return [directionsI[elem], directionsJ[elem]];
+        });
+        console.log("dir");
+        console.log(dir);
+        let x = 0.0;
+        let y = 0.0;
+        let coords = dir.map( function(elem, i){
+            let result = (i === 0) ? elem : [x + elem[0], y + elem[1]];
+            x += elem[0];
+            y += elem[1];
+            return result;
+        });
+        console.log(coords);
+        let extrems = findExtrem(coords);
+        console.log("extrems");
+        console.log(extrems);
+        let size = [extrems.xmax - extrems.xmin + 1, extrems.ymax - extrems.ymin + 1];
+        console.log("size");
+        console.log(size);
+        (maxDiameter < size[0]) ? (
+            maxDiameter = size[0],
+            maxAngle = i
+        ) : null;
+        (maxDiameter < size[1]) ? (
+            maxDiameter = size[1],
+            maxAngle = i + 90
+        ) : null;
+        (minDiameter > size[0]) ? (
+            minDiameter = size[0],
+            minProjection = size[1],
+            minAngle = i
+        ) : null;
+        (minDiameter > size[1]) ? (
+            minDiameter = size[1],
+            minProjection = size[0],
+            minAngle = i + 90
+        ) : null;
+        newDirectionsI = directionsI.map( function(elem, i){
+            return elem * rotation[0] + directionsJ[i] * (-rotation[1]);
+        });
+        newDirectionsJ = directionsJ.map( function(elem, i){
+            return elem * rotation[0] + directionsI[i] * rotation[1];
+        });
+        directionsI = newDirectionsI;
+        directionsJ = newDirectionsJ;
+        console.log("new directions");
+        console.log(directionsI);
+        console.log(directionsJ);
+    }
+    console.log("Object length : ");
+    console.log(maxDiameter);
+    console.log("at :");
+    console.log(maxAngle);
+    console.log("Minimum Bounding Box");
+    console.log(minDiameter);
+    console.log(minProjection);
+    console.log(minAngle);
+}
+
+const findExtrem = function(particule){
+  //particule is a list of coord
+  let extrem = {xmin:particule[0][0], xmax:particule[0][0], ymin:particule[0][1], ymax:particule[0][1]};
+
+
+  particule.reduce(function(extrem,coord){
+    extrem.xmin = extrem.xmin > coord[0] ? coord[0] : extrem.xmin;
+    extrem.xmax = extrem.xmax < coord[0] ? coord[0] : extrem.xmax;
+    extrem.ymin = extrem.ymin > coord[1] ? coord[1] : extrem.ymin;
+    extrem.ymax = extrem.ymax < coord[1] ? coord[1] : extrem.ymax;
+    return extrem;
+  }, extrem);
+  return extrem
+}
+
 const area = function (particule){
   return particule.reduce( (number) => number+=1);
 }
@@ -203,3 +401,6 @@ const centerOfMass = function(particule){
   let Ys = particule.reduce( ((totalY, pixel) => totalY += pixel[1]), 0);
   return ([Math.round(Xs / particule.length), Math.round(Ys / particule.length)]);
 }
+
+feretDiameter2([0, 0, 1, 3, 4, 5, 6]);
+//feretDiameter2([0, 4]);
