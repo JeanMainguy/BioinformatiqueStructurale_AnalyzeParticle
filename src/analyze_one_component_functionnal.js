@@ -27,30 +27,30 @@
 
 /**
  * Label an image as a set of Regions Of Interest (ROI)
- *
- * @param {TRaster} img - Input image
+ * Once the first pixel of a connected component is found, all the connected pixels of that connected component are labelled before going onto the next pixel in the image
+ * @param {TImage} img - Input image
  * @param {boolean} copy - Copy mode
- * @return {type} A set of Regions Of Interest (ROI)
- * @author TODO
+ * @return {Array} an Array of label
+ * @author Rokhaya BA
  */
 const labelling = function (img,copy=true) {
 
   const labelComponent = function(){
-    while (listePixel.length != 0)
+    while (pixelList.length != 0)
     {
-      let indice = listePixel[0]; // stocke la valeur du premier pixel dans une variable avant de la supprimer
-      listePixel.shift();
-      let ind_up = indice - width;
-      let ind_down = indice + width;
-      let ind_right = ((indice + 1) % width == 0) ? undefined : indice + 1;
-      let ind_left = (indice % width == 0) ? undefined : indice - 1;
-      let listeIndice = [ind_up,ind_down,ind_right,ind_left]; // liste qui recupère tous les voisins
-      listeIndice.forEach(function(ind_voisin)
+      let index = pixelList[0]; // stores the index of the first pixel and then remove it from the pixel list
+      pixelList.shift();
+      let ind_up = index - width;
+      let ind_down = index + width;
+      let ind_right = ((index + 1) % width == 0) ? undefined : index + 1; // check if the pixel has a neighbour on the right
+      let ind_left = (index % width == 0) ? undefined : index - 1; // check if the pixel has a neighbour on the left
+      let indexList = [ind_up,ind_down,ind_right,ind_left];
+      indexList.forEach(function(ind_neighbour)
       {
-          (pixelArray[ind_voisin] == 255 && labelData[ind_voisin] == 0) ?
+          (pixelArray[ind_neighbour] == 255 && labelData[ind_neighbour] == 0) ?
           (
-        listePixel.push(parseInt(ind_voisin)),
-        labelData[parseInt(ind_voisin)] = label
+        pixelList.push(parseInt(ind_neighbour)), // parseInt transform a string to int
+        labelData[parseInt(ind_neighbour)] = label
       ) : null;
       });
     }
@@ -58,15 +58,15 @@ const labelling = function (img,copy=true) {
 
     let raster = img.getRaster();
     let pixelArray = raster.pixelData;
-    let listePixel = new Array(); // Liste vide pour parcourir l'image
+    let pixelList = new Array(); // An empty array for keeping pixels
     let label = 1;
-    let labelData = new Array(img.height*img.width).fill(0); // liste vide pour stocker les labels affectés à chaque pixel
-    let width = img.width; // Largeur et taille de l'array
+    let labelData = new Array(img.height*img.width).fill(0); // An empty array which stores labels for each pixel
+    let width = img.width; //
     let length = pixelArray.length;
     pixelArray.forEach(function(elem,i)
     {
 	     (elem == 255 && labelData[i] == 0) ? (
-  	    listePixel.push(i),
+  	    pixelList.push(i),
   	    labelData[i] = label,
         labelComponent(),
   	    label = label + 1
