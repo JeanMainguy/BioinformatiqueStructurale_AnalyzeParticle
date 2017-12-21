@@ -27,8 +27,7 @@
   */
 
   /**
-   * Finds the objects in an image and return an object containing lists of coordinates such as :
-   * o = {1:[[1, 1], [2, 1]], 2:[[4, 4]]}
+   * Finds the objects in an image and return an labeled image.
    * 8-connected components
    * Implementing the algorithm from Chang et al. (2003) http://www.iis.sinica.edu.tw/papers/fchang/1362-F.pdf
    * The algorithm goes through the image one pixel at a time, from top left to bottom right. When it finds a black pixel, there are three possibilities :
@@ -43,7 +42,7 @@
    *
    * @param {TImage} img - Input image
    * @param {boolean} copy - Copy mode
-   * @return {type} A set of Regions Of Interest (ROI) as a list of lists of coordinates
+   * @return {TRaster} A TRaster with labels as pixel values
    * @author Martin Binet
    */
 
@@ -90,7 +89,11 @@
         ) : null;
       });
 
-      return matrixLabel;
+      label_raster = img.getRaster();
+      label_raster.pixelData = matrixLabel;
+
+
+      return label_raster;
   }
 
   /**
@@ -144,7 +147,7 @@
    * @param {int} w - width of the input image
    * @param {int} h - height of the input image
    * @param {int} i - x coordinate of the middle pixel
-   * @param {int} j - y coordinate of the middle pixel
+   * @param {int} j - y coordinatlabel_imge of the middle pixel
    * @param {int} angle - angle at which to start the rotation
    * @param {Array} matrixLabel - current matrix contening the labeled objects
    * @return {Array} An array containing the angle at which the next pixel was found and its coordinates
@@ -159,7 +162,7 @@
       nextI = i+rotationMatrixI[angle],
       nextJ = j+rotationMatrixJ[angle],
       (0 <= nextI && nextI <= h && 0 <= nextJ && nextJ < w ) ? (
-        (img[nextI * w + nextJ] === 255) ? (
+        (img[nextI * w + nextJ] > 0) ? (
           result = [angle, nextI, nextJ]
         ) : (
           (matrixLabel != null) ? (
@@ -227,7 +230,7 @@
     // Second Pass
     label_img = label_img.map((label, i) => union_find[label_img[i]]);
 
-    label_raster = img.getRaster();
+    let label_raster = img.getRaster();
     label_raster.pixelData = label_img;
 
 
@@ -239,7 +242,7 @@
    * Once the first pixel of a connected component is found, all the connected pixels of that connected component are labelled before going onto the next pixel in the image
    * @param {TImage} img - Input image
    * @param {boolean} copy - Copy mode
-   * @return {Array} an Array of label
+   * @return {TRaster} a Raster with the labels as pixel values
    * @author Rokhaya BA
    */
   const labellingOneComponent = function (img,copy=true) {
@@ -270,7 +273,12 @@
       let pixelList = new Array(); // An empty array for keeping pixels
       let label = 1;
       let labelData = new Array(img.height*img.width).fill(0); // An empty array which stores labels for each pixel
-      let width = img.width; //
+      let width = img.width; //    // function getParticle(list_p, label, i ){
+    //   return list_p = label < 1 ? (list_p) :(
+    //   index = labels.indexOf(label),
+    //   index != -1 ? label_array[index].push(labbeled_raster.xy(i)) : label_array.push([labbeled_raster.xy(i)]),
+    //   list_p);
+    // }
       let length = pixelArray.length;
       pixelArray.forEach(function(elem,i)
       {
@@ -282,16 +290,14 @@
         ) : null;
   });
 
-      return labelData;
+  let label_raster = img.getRaster();
+  label_raster.pixelData = labelData;
+
+
+  return label_raster;
   }
 
   const getListParticle = function(labbeled_raster){
-    function getParticle(list_p, label, i ){
-      return list_p = label < 1 ? (list_p) :(
-      index = labels.indexOf(label),
-      index != -1 ? label_array[index].push(labbeled_raster.xy(i)) : label_array.push([labbeled_raster.xy(i)]),
-      list_p);
-    }
     let label_list = new Array();
     let label_array = labbeled_raster.pixelData;
     let list_p = new Array();
@@ -312,16 +318,18 @@
 
   /**
    * For each particule, takes the first pixel and create a chaincode of the boundary of the particule
-   * Beside the matrixLabel, function the same way as contourTracing
+   * Beside the matrixLabel that has been removed, function the same way as contourTracing
    *
-   * @param {Array} img - Labelised Image
-   * @param {int} w - width of the input image
-   * @param {int} h - height of the input image
+   * @param {TRaster} raster - Raster with a labelised Image
+   * @param {Array} particule -
    * @return {Array} First element is the coordinates of the starting pixel, the rests are angle values.
 
    * @author Martin Binet
    */
-  const chainCode = function(img, particules, w, h){
+  const chainCode = function(raster, particules){
+      let pixels = raster.pixelData;
+      let h = raster.height;
+      let w = raster.width;
       let chaincodes = new Array();
       let angle = 7;
       particules.forEach( function(elem){
@@ -329,7 +337,7 @@
           //chaincodes.push(origin);
           let second;
           let tmp;
-          tmp = tracer(img, w, h, origin[0], origin[1], angle);
+          tmp = tracer(pixels, w, h, origin[0], origin[1], angle);
           (tmp != null) ? (
             second = tmp.slice(1, 3),
             angle = (tmp[0] + 6) % 8) : null;
@@ -337,7 +345,7 @@
           let previousPixel;
           while (second != null && !((JSON.stringify(origin) === JSON.stringify(previousPixel)) && (JSON.stringify(second) === JSON.stringify(nextPixel)))){
             previousPixel = nextPixel;
-            tmp = tracer(img, w, h, nextPixel[0], nextPixel[1], angle);
+            tmp = tracer(pixels, w, h, nextPixel[0], nextPixel[1], angle);
             (tmp != null) ? (
               nextPixel = tmp.slice(1, 3),
               angle = (tmp[0] + 6) % 8,
@@ -345,6 +353,7 @@
             ) : null;
           }
       })
+      console.log(chaincodes);
       return chaincodes;
   }
 
