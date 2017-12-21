@@ -1,8 +1,7 @@
 const circularity = function(raster_labeled, particule)
 {
 const peri = perimeter(raster_labeled, particule);
-console.log("peri");
-console.log(perimeter(raster_labeled, particule));
+//const peri = 3;
 const area = particule.length;
 console.log("area");
 console.log(area);
