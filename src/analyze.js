@@ -51,14 +51,14 @@
       function labelOuterContour(index){
         // Starts the tracer for the outer contour of the particule
           matrixLabel[index] = label;
-          contourTracing(img_copy, w, h, [Math.floor(index/w), (index)%w], 7, matrixLabel, label);
+          contourTracing(img_copy, w, h+1, [(index%w), Math.floor(index/w)], 7, matrixLabel, label);
           label++;
       }
 
       function labelInnerContour(index){
         // Starts the tracer for the inner contour of the particule
           checkPixel();
-          contourTracing(img_copy, w, h, [Math.floor(index/w), (index)%w], 3, matrixLabel, pLabel);
+          contourTracing(img_copy, w, h+1, [(index)%w, Math.floor(index/w)], 3, matrixLabel, pLabel);
       }
 
       function checkPixel(index){
@@ -89,8 +89,8 @@
         ) : null;
       });
 
-      label_raster = img.getRaster();
-      label_raster.pixelData = matrixLabel;
+      label_raster = new T.Raster("uint8", w, h);
+      label_raster.pixelData = matrixLabel.slice(w);
 
 
       return label_raster;
@@ -130,7 +130,7 @@
       (tmp != null) ? (
         nextPixel = tmp.slice(1, 3),
         angle = (tmp[0] + 6) % 8,
-        matrixLabel[nextPixel[0] * w + nextPixel[1]] = label
+        matrixLabel[nextPixel[0] + nextPixel[1] * w] = label
       ) : null;
     }
   }
@@ -153,20 +153,20 @@
    * @return {Array} An array containing the angle at which the next pixel was found and its coordinates
    * @author Martin Binet
    */
-  const tracer = function(img, w, h, i, j, angle, matrixLabel = null){
-    let rotationMatrixI = [0, 1, 1, 1, 0, -1, -1, -1];
-    let rotationMatrixJ = [1, 1, 0, -1, -1, -1, 0, 1];
+  const tracer = function(img, w, h, x, y, angle, matrixLabel = null){
+    let rotationMatrixX = [1, 1, 0, -1, -1, -1, 0, 1];
+    let rotationMatrixY = [0, 1, 1, 1, 0, -1, -1, -1];
     let result = null;
-    rotationMatrixI.forEach( function(element){
+    rotationMatrixX.forEach( function(element){
       (result === null) ? (
-      nextI = i+rotationMatrixI[angle],
-      nextJ = j+rotationMatrixJ[angle],
-      (0 <= nextI && nextI <= h && 0 <= nextJ && nextJ < w ) ? (
-        (img[nextI * w + nextJ] > 0) ? (
-          result = [angle, nextI, nextJ]
+      nextX = x+rotationMatrixX[angle],
+      nextY = y+rotationMatrixY[angle],
+      (0 <= nextX && nextX <= w && 0 <= nextY && nextY < h ) ? (
+        (img[nextX + nextY * w] > 0) ? (
+          result = [angle, nextX, nextY]
         ) : (
           (matrixLabel != null) ? (
-              matrixLabel[nextI * w + nextJ] = -1
+              matrixLabel[nextX + nextY * w] = -1
           ) : null
         )
       ) : null,
@@ -230,7 +230,7 @@
     // Second Pass
     label_img = label_img.map((label, i) => union_find[label_img[i]]);
 
-    let label_raster = img.getRaster();
+    let label_raster = new T.Raster("uint8", raster.width, raster.height);
     label_raster.pixelData = label_img;
 
 
@@ -290,7 +290,7 @@
         ) : null;
   });
 
-  let label_raster = img.getRaster();
+  let label_raster = new T.Raster("uint8", raster.width, raster.height);
   label_raster.pixelData = labelData;
 
 
@@ -334,12 +334,12 @@
       let angle = 7;
       particules.forEach( function(elem){
           let origin = elem[0];
-          //chaincodes.push(origin);
           let second;
           let tmp;
           tmp = tracer(pixels, w, h, origin[0], origin[1], angle);
           (tmp != null) ? (
             second = tmp.slice(1, 3),
+            chaincodes.push(tmp[0]),
             angle = (tmp[0] + 6) % 8) : null;
           let nextPixel = second;
           let previousPixel;
@@ -347,13 +347,12 @@
             previousPixel = nextPixel;
             tmp = tracer(pixels, w, h, nextPixel[0], nextPixel[1], angle);
             (tmp != null) ? (
+                chaincodes.push(tmp[0]),
               nextPixel = tmp.slice(1, 3),
-              angle = (tmp[0] + 6) % 8,
-              chaincodes.push(angle)
+              angle = (tmp[0] + 6) % 8
             ) : null;
           }
       })
-      console.log(chaincodes);
       return chaincodes;
   }
 
@@ -366,21 +365,21 @@
    * @return {type} Measurements and/or result image
    * @author TODO
    */
-  // const measure = function (particules, params) {
-  //     const headers_storage = {feretDiametefunction(particule)r : ["maxDiameter", "maxAngle", "minDiameter", "minProjection", "minAngle"],
-  //               area : ["Area"],
-  //               boundingRectangle : ["width", "height", "bx", "by"],
-  //               centroid : ["CentroidX", "CentroidY"]}
-  //       const headers = [params.reduce( (accu, elem) => accu.concat(headers_storage[elem.name]), [])];
-  //   let lines = particules.map( function(particule){
-  //        let result = params.map( function(param){
-  //           return param.function(particule);
-  //       });
-  //       console.log(result);
-  //       return result;
-  //   });
-  //   saveResults(headers.concat(lines));
-  // }
+  const measure = function (raster, particules, params) {
+      const headers_storage = {feretDiameter : ["maxDiameter", "maxAngle", "minDiameter", "minProjection", "minAngle"],
+                area : ["Area"],
+                boundingRectangle : ["width", "height", "bx", "by"],
+                centroid : ["CentroidX", "CentroidY"]};
+        const headers = [params.reduce( (accu, elem) => accu.concat(headers_storage[elem.name]), [])];
+    let lines = particules.map( function(particule){
+         let result = params.map( function(param){
+            return param.function(raster, particule);
+        });
+        console.log(result);
+        return result;
+    });
+    saveResults(headers.concat(lines));
+  }
 
   /**
    * Saves the data in a csv and offers to the user to download it
@@ -420,19 +419,19 @@
     return extrem;
 }
 
-  const area = function (particule){
+  const area = function (raster, particule){
     return particule.length;
   }
   const area_obj = {"name": "area", "function" : area}
 
-  const centroid = function(particule){
+  const centroid = function(raster, particule){
     let Xs = particule.reduce( ((totalX, pixel) => totalX + pixel[0]), 0);
     let Ys = particule.reduce( ((totalY, pixel) => totalY += pixel[1]), 0);
     return ([Math.round(Xs / particule.length), Math.round(Ys / particule.length)]);
   }
   const centroid_obj = {"name": "centroid", "function" : centroid}
 
-  const feretDiameter = function(particule){
+  const feretDiameter = function(raster, particule){
       //let angles = chainCode(img, particules, w, h)
       let stepsize = 2.0 * (Math.PI/180.0);
       const rotation = [Math.cos(stepsize), Math.sin(stepsize)];//*(180 / Math.PI)];
@@ -489,7 +488,7 @@
   const feretDiameter_obj = {"name": "feretDiameter", "function" : feretDiameter};
 
 
-  const boundingRectangle = function(particule){
+  const boundingRectangle = function(raster, particule){
     console.log("particule",particule);
     let extrem = {xmin:particule[0][0], xmax:particule[0][0], ymin:particule[0][1], ymax:particule[0][1]};
 
