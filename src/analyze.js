@@ -518,7 +518,7 @@ const perimeter = function(raster_labeled, particule){
   return accu;
   }, {odd:0, even:0, corner:0})
 
-  let perimeter = cmpt.odd*0.980 + cmpt.even*1.406 - cmpt.corner*0.091;
+  let perimeter = cmpt.even*0.980 + cmpt.odd*1.406 - cmpt.corner*0.091;
   return [perimeter];
 }
 const perimeter_obj = {"name": "perimeter", "function" : perimeter};
