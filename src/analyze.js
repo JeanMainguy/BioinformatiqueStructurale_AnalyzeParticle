@@ -297,11 +297,11 @@
     let list_p = new Array();
 
     label_array.reduce(function(list_p, label, i){
-      console.log("label list", label_list);
+      // console.log("label list", label_list);
       return list_p = label < 1 ? (list_p) :(
-        console.log("label",label , "  list_p", list_p, " "),
+        // console.log("label",label , "  list_p", list_p, " "),
       index = label_list.indexOf(label),
-      console.log("index", index),
+      // console.log("index", index),
       index != -1 ? list_p[index].push(labbeled_raster.xy(i)) : (
                   list_p.push([labbeled_raster.xy(i)]),
                   label_list.push(label)),
@@ -357,21 +357,21 @@
    * @return {type} Measurements and/or result image
    * @author TODO
    */
-  const measure = function (particules, params) {
-      const headers_storage = {feretDiametefunction(particule)r : ["maxDiameter", "maxAngle", "minDiameter", "minProjection", "minAngle"],
-                area : ["Area"],
-                boundingRectangle : ["width", "height", "bx", "by"],
-                centroid : ["CentroidX", "CentroidY"]}
-        const headers = [params.reduce( (accu, elem) => accu.concat(headers_storage[elem.name]), [])];
-    let lines = particules.map( function(particule){
-         let result = params.map( function(param){
-            return param.function(particule);
-        });
-        console.log(result);
-        return result;
-    });
-    saveResults(headers.concat(lines));
-  }
+  // const measure = function (particules, params) {
+  //     const headers_storage = {feretDiametefunction(particule)r : ["maxDiameter", "maxAngle", "minDiameter", "minProjection", "minAngle"],
+  //               area : ["Area"],
+  //               boundingRectangle : ["width", "height", "bx", "by"],
+  //               centroid : ["CentroidX", "CentroidY"]}
+  //       const headers = [params.reduce( (accu, elem) => accu.concat(headers_storage[elem.name]), [])];
+  //   let lines = particules.map( function(particule){
+  //        let result = params.map( function(param){
+  //           return param.function(particule);
+  //       });
+  //       console.log(result);
+  //       return result;
+  //   });
+  //   saveResults(headers.concat(lines));
+  // }
 
   /**
    * Saves the data in a csv and offers to the user to download it
