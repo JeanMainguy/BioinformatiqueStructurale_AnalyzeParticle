@@ -504,3 +504,30 @@
     return [extrem.xmax-extrem.xmin+1, extrem.ymax-extrem.ymin+1, extrem.xmin, extrem.ymin]
   }
 const boundingRectangle_obj = {"name": "boundingRectangle", "function" : boundingRectangle};
+
+
+const perimeter = function(raster_labeled, particule){
+  const w = raster_labeled.width;
+  const h = raster_labeled.height;
+  chain_code = chainCode(raster_labeled.pixelData, particule, w, h);
+  chain_code = [3,2,2,0,0,4,5,7,6];
+  let cmpt = chain_code.reduce(function(accu, angle, i, chain){
+  angle % 2 == 0 ? accu.even ++ : accu.odd ++;
+  i_next = chain[i+1] === undefined ? 0 : i+1; // When we arrive at the last element of the chain the next one is the first one
+  angle != chain[i_next] ? accu.corner ++ : accu.corner;
+  return accu;
+  }, {odd:0, even:0, corner:0})
+
+  let perimeter = cmpt.odd*0.980 + cmpt.even*1.406 - cmpt.corner*0.091;
+  return [perimeter];
+}
+const perimeter_obj = {"name": "perimeter", "function" : perimeter};
+
+const circularity = function(raster_labeled, particule)
+{
+    const peri = perimeter(raster_labeled, particule)[0];
+    const area = particule.length;
+    const circu = ((4*Math.PI)*(area/Math.pow(peri, 2)));
+    return [circu];
+}
+const circularity_obj = {"name": "circularity", "function" : circularity};
