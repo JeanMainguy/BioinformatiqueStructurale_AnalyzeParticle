@@ -178,11 +178,16 @@
   }
 
   /**
-   * Label an image as a set of Regions Of Interest (ROI)
+   * Algorithm Two Pass
+   * Consists of two pass:
+   * First pass : the algo goes to each pixel and
+   * labelised it according to the neigbors pixel above and on the left by taking the lowest pixels
+   * and notify a variable call union find.
+   * In the second pass the algo cleans the particle that have different label by using the union find.
    *
-   * @param {TRaster} img - Input image
+   * @param {TImage} img - Input image
    * @param {boolean} copy - Copy mode
-   * @return {type} A set of Regions Of Interest (ROI)
+   * @return {TRaster} A TRaster with labels as pixel values
    * @author Jean Mainguy
    */
   const labellingTwoPass = function (img,copy=true) {
@@ -297,6 +302,14 @@
   return label_raster;
   }
 
+  /**
+   * Converting the raster labelised into a list of list of particule defined by their coordinate xy
+   *
+   * @param {TRaster} raster - Raster object returned by a labbeling function with pixelData set as label
+   * @return {type} - an array containing the area of the particle
+   * @return {array} particule - Array containing arrays of the pixel's coordinates of one particle
+   * @author Jean Mainguy
+   */
   const getListParticle = function(labbeled_raster){
     let label_list = new Array();
     let label_array = labbeled_raster.pixelData;
@@ -404,6 +417,13 @@
       link.click(); // This will download the data file named "my_data.csv".
   }
 
+  /**
+   * To find the extrem pixels of a particle in x and y axis and in y
+   *
+   * @param {type} particule - Array of the pixel's coordinates of one particle
+   * @return {type} - an object with the coordinate of the extrem pixels
+   * @author Jean Mainguy
+   */
   const findExtrem = function(particule){
     //particule is a list of coord
     let extrem = {xmin:particule[0][0], xmax:particule[0][0], ymin:particule[0][1], ymax:particule[0][1]};
@@ -417,13 +437,30 @@
       return extrem;
     }, extrem);
     return extrem;
-}
+ }
 
+ /**
+  * Measure of the Area
+  *
+  * @param {TRaster} raster - Raster object returned by a labbeling function with pixelData set as label
+  * @param {type} particule - Array of the pixel's coordinates of one particle
+  * @return {type} - an array containing the area of the particle
+  * @author TODO
+  */
   const area = function (raster, particule){
     return particule.length;
   }
   const area_obj = {"name": "area", "function" : area}
 
+
+  /**
+   * Measure of the centroid
+   *
+   * @param {TRaster} raster - Raster object returned by a labbeling function with pixelData set as label
+   * @param {type} particule - Array of the pixel's coordinates of one particle
+   * @return {type} - an array containing the coordinates of the centroid
+   * @author TODO
+   */
   const centroid = function(raster, particule){
     let Xs = particule.reduce( ((totalX, pixel) => totalX + pixel[0]), 0);
     let Ys = particule.reduce( ((totalY, pixel) => totalY += pixel[1]), 0);
@@ -431,6 +468,17 @@
   }
   const centroid_obj = {"name": "centroid", "function" : centroid}
 
+
+
+
+  /**
+   * Measure of the Feret Diameter
+   *
+   * @param {TRaster} raster - Raster object returned by a labbeling function with pixelData set as label
+   * @param {type} particule - Array of the pixel's coordinates of one particle
+   * @return {type} - an array containing the maxDiameter maxAngle minDiameter minProjection and minAngle
+   * @author TODO
+   */
   const feretDiameter = function(raster, particule){
       //let angles = chainCode(img, particules, w, h)
       let stepsize = 2.0 * (Math.PI/180.0);
@@ -487,7 +535,14 @@
   }
   const feretDiameter_obj = {"name": "feretDiameter", "function" : feretDiameter};
 
-
+  /**
+   * Measure of the boundingRectangle
+   *
+   * @param {TRaster} raster - Raster object returned by a labbeling function with pixelData set as label
+   * @param {type} particule - Array of the pixel's coordinates of one particle
+   * @return {type} - an array containing the width, height of the bounding rectangle and the coordinates of the upper left pixel of the bounding rectangle
+   * @author Jean Mainguy
+   */
   const boundingRectangle = function(raster, particule){
     console.log("particule",particule);
     let extrem = {xmin:particule[0][0], xmax:particule[0][0], ymin:particule[0][1], ymax:particule[0][1]};
@@ -505,7 +560,14 @@
   }
 const boundingRectangle_obj = {"name": "boundingRectangle", "function" : boundingRectangle};
 
-
+/**
+ * Measure of the perimeter
+ *
+ * @param {TRaster} raster - Raster object returned by a labbeling function with pixelData set as label
+ * @param {type} particule - Array of the pixel's coordinates of one particle
+ * @return {type} - an array containing calculated perimeter
+ * @author Jean Mainguy
+ */
 const perimeter = function(raster_labeled, particule){
   const w = raster_labeled.width;
   const h = raster_labeled.height;
@@ -523,6 +585,15 @@ const perimeter = function(raster_labeled, particule){
 }
 const perimeter_obj = {"name": "perimeter", "function" : perimeter};
 
+
+/**
+ * Measure of the circularity
+ *
+ * @param {TRaster} raster - Raster object returned by a labbeling function with pixelData set as label
+ * @param {type} particule - Array of the pixel's coordinates of one particle
+ * @return {type} - an array containing the measure of circularity
+ * @author TODO
+ */
 const circularity = function(raster_labeled, particule)
 {
     const peri = perimeter(raster_labeled, particule)[0];
