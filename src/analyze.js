@@ -209,18 +209,22 @@
                         )
                 );
         label_img[i] = label_i;
-    }
+    };
 
     function notify_union_find(labelA, labelB, union_find){
         labelA < labelB ? (union_find[labelB] = union_find[labelA]) : (union_find[labelA] = union_find[labelB]);
-    }
+    };
+
+    function getLabelFromUnionFind(label, union_find){
+      let corect_label = union_find[label] == label ? (label) : getLabelFromUnionFind(union_find[label], union_find);
+      return corect_label;
+    };
 
     function new_label(union_find){
         union_find.label_cmpt ++;
         union_find[union_find.label_cmpt] = union_find.label_cmpt;
         return union_find.label_cmpt;
-    }
-
+    };
 
     let raster = img.getRaster();
     union_find = {label_cmpt:0, 0:0};
@@ -231,9 +235,8 @@
     raster.pixelData.forEach(function(pix, i){
       pix == 255 ? label_pix(i, label_img, raster.width, union_find) : undefined;
     });
-
     // Second Pass
-    label_img = label_img.map((label, i) => union_find[label_img[i]]);
+    label_img = label_img.map((label, i) => getLabelFromUnionFind(label, union_find));
 
     let label_raster = new T.Raster("uint8", raster.width, raster.height);
     label_raster.pixelData = label_img;
@@ -306,8 +309,8 @@
    * Converting the raster labelised into a list of list of particule defined by their coordinate xy
    *
    * @param {TRaster} raster - Raster object returned by a labbeling function with pixelData set as label
-   * @return {type} - an array containing the area of the particle
-   * @return {array} particule - Array containing arrays of the pixel's coordinates of one particle
+   * @return {array} - an array containing the area of the particle
+   * @return {array} particule - Array containing arrays of the pixel's coordinates of the particle
    * @author Jean Mainguy
    */
   const getListParticle = function(labbeled_raster){
@@ -372,8 +375,9 @@
   /**
    * Measure a set of Regions Of Interest (ROI)
    *
+   * @param {TRaster} raster - Raster object returned by a labbeling function with pixelData set as label
+   * @param {type} particules - Array containing arrays of pixel's coordinates for each particles
    * @param {type} params - Measurements Parameters (eg. Area, Centroid)
-   * @param {type} roiset - A set of ROIs
    * @param {boolean} copy - Useless. Just here for compatibility
    * @return {type} Measurements and/or result image
    * @author TODO
@@ -388,7 +392,7 @@
          let result = params.map( function(param){
             return param.function(raster, particule);
         });
-        console.log(result);
+        // console.log(result);
         return result;
     });
     saveResults(headers.concat(lines));
@@ -544,7 +548,7 @@
    * @author Jean Mainguy
    */
   const boundingRectangle = function(raster, particule){
-    console.log("particule",particule);
+    // console.log("particule",particule);
     let extrem = {xmin:particule[0][0], xmax:particule[0][0], ymin:particule[0][1], ymax:particule[0][1]};
 
 
@@ -555,7 +559,7 @@
       extrem.ymax = extrem.ymax < coord[1] ? coord[1] : extrem.ymax;
       return extrem;
     }, extrem);
-    console.log("extrem", extrem);
+    // console.log("extrem", extrem);
     return [extrem.xmax-extrem.xmin+1, extrem.ymax-extrem.ymin+1, extrem.xmin, extrem.ymin]
   }
 const boundingRectangle_obj = {"name": "boundingRectangle", "function" : boundingRectangle};
