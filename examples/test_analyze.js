@@ -32,4 +32,4 @@ console.log(particules_compo.length, "particles have been found");
 
 
 console.log("Measure:");
-measure(labeled_raster_two, particules_two, [area_obj, centroid_obj, boundingRectangle_obj])
+measure(labeled_raster_two, particules_two, [area_obj, centroid_obj, boundingRectangle_obj, perimeter_obj])
