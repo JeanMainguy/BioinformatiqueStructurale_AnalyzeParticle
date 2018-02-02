@@ -48,7 +48,7 @@ let src_vs = `#version 300 es
         v_texCoord = a_texCoord;
         vec2 clipSpace = a_vertex * u_resolution * 2.0 - 1.0;
         gl_Position = vec4(clipSpace * vec2(1.0, -1.0), 0.0, 1.0);
-}` ;
+}` ; // On utilise pas trop le vertex shader donc on laisse avec les paramètres de taveau
 
 let src_fs = `#version 300 es
     precision mediump float;
@@ -75,11 +75,14 @@ let src_fs = `#version 300 es
         if(texture(u_raster, v_texCoord).r < 1.0 && texture(u_raster, v_texCoord + vec2(onePixel.x, 0.0)).r < 1.0){
             outColor = vec4(1.0, 0.0, 1.0, 1.0);
         }
+        if(texture(u_raster, v_texCoord).r < 1.0 && texture(u_raster, v_texCoord - vec2(onePixel.x, 0.0)).r < 1.0){
+            outColor = vec4(1.0, 0.0, 1.0, 1.0);
+        }
         // outColor = vec4(rand(st) - texture(u_raster, v_texCoord).rgb, 1.0);
         // if(v_texCoord.x>0.5){
         //     outColor = texture(u_raster, v_texCoord);
         // }
-}` ;
+}` ; // On mets nos algos dans le main ; le if definit cherche les pixels noirs et celles à droites noires. r> 1 pixel noir sinon pixel blanc
 
 let program = gpu.createProgram(gpuEnv,src_vs,src_fs);
 
