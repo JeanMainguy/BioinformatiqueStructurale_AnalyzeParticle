@@ -1,0 +1,28 @@
+
+Pour déterminer les sommets du convex hull
+
+Si c'est un pixel du bord:
+  si il n'a pas de pixel en haut (en y+1):
+      Pour chaque côté (droite ou gauche):
+        on definit le premier "max adjacent" avec le max de la colonne adjacente qui est le pixel avec le plus haut Y
+            Si il y a pas pixel du blob dans la colonne à droite:
+                le pixel courant est un sommet du convex hull. on le marque come tel et on a terminé
+        Ensuite pour toute les colonnes de ce côté jusqu'a ce que il n'y a plus de pixel appartenant au blob dans la colonne
+          on prend le max en Y de la colonne. on détermine l'angle entre le pixel qu'on regarde > le max adjacent > et le max de la colonne courante
+            si l'angle est oaigue: le max de la colonne courante devient "le max adjacent" et on passe à la colonne suivante
+            si l'angle est obtue on passe à la colonne suivante
+
+    Faire la même chose pour les colonnes à gauche
+
+    Une fois qu'on a déterminé le max à gauche et à droite
+    On détermine l'angle entre le max de gauche > le pixel courant > le max de droite
+    Si il est obtue: on marque le pixel courant comme un sommet du convexhull
+    Si il est aigu: rien du tout
+
+    Si le pixel du bord a pas de pixel coloré en dessous
+        On regarde le min en Y plutot que le max
+
+    Si il a pas de pixel à droite (x+1 == vide)
+      on fait la meme chose mais avec des lignes:
+        on cherche le max en X dans la ligne adj etc..
+    Si il y a pas de pixel à gauche.. on regarde le min en X des lignes...
