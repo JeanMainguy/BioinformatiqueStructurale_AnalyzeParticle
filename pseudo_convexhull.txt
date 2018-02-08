@@ -6,11 +6,11 @@ Si c'est un pixel du bord:
       Pour chaque côté (droite ou gauche):
         on definit le premier "max adjacent" avec le max de la colonne adjacente qui est le pixel avec le plus haut Y
             Si il y a pas pixel du blob dans la colonne à droite:
-                le pixel courant est un sommet du convex hull. on le marque come tel et on a terminé
-        Ensuite pour toute les colonnes de ce côté jusqu'a ce que il n'y a plus de pixel appartenant au blob dans la colonne
-          on prend le max en Y de la colonne. on détermine l'angle entre le pixel qu'on regarde > le max adjacent > et le max de la colonne courante
-            si l'angle est oaigue: le max de la colonne courante devient "le max adjacent" et on passe à la colonne suivante
-            si l'angle est obtue on passe à la colonne suivante
+                le pixel courant est un sommet du convex hull. on le marque comme tel et on a terminé
+            Sinon pour toute les colonnes de ce côté jusqu'a ce que il n'y a plus de pixel appartenant au blob dans la colonne
+              on prend le max en Y de la colonne. on détermine l'angle entre le pixel qu'on regarde > le max adjacent > et le max de la colonne courante
+                si l'angle est oaigue: le max de la colonne courante devient "le max adjacent" et on passe à la colonne suivante
+                si l'angle est obtue on passe à la colonne suivante
 
     Faire la même chose pour les colonnes à gauche
 

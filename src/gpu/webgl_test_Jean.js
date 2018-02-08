@@ -27,7 +27,7 @@
   */
 
 let img = new T.Image('uint8',200,100);
-img.setPixels(new Uint8ClampedArray(particles_pixels));
+img.setPixels(new Uint8ClampedArray(particlesROI_pixels));
 
 raster = img.getRaster();
 let view = cpu.view(raster);
@@ -57,11 +57,32 @@ let src_fs = `#version 300 es
     uniform sampler2D u_raster;
     uniform vec2 u_textureSize;
 
+
+
     // Declare an output for the fragment shader
     out vec4 outColor;
 
-    float rand(vec2 co){
-        return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+
+    vec2 colonneMaxFinder(vec2 coord, vec2 onePixel, float rvalue, float bord, float signe){
+    //  coord est un pixel de la colonne appartenant au blob
+    //  On cherche le max de la colonne
+    // bord est les coord en y du pixel du bord soit 1.0 soit 0.0
+    // Si bord 1.0 on cherche regarde les pixels situé du bord inferieur jusqu'au pixel courant donc le signe est -1 pour retirer un pixel chaque tour de while
+    // si bord 0.0 signe +1 pour aller de 0.0 jusqu'au pixel courant..  
+
+      vec2 coordmax = coord;
+      vec2 variableCoord = vec2(coord.x + onePixel.x, bord);
+
+
+      while (variableCoord.y > coord.y){
+        if (texture(u_raster, variableCoord).r == rvalue) {
+            coordmax = variableCoord;
+            break;
+        }
+        variableCoord.y = variableCoord.y  + signe * onePixel.y;
+      }
+
+      return coordmax;
     }
 
     void main() {
@@ -70,16 +91,36 @@ let src_fs = `#version 300 es
 
         // compute 1 pixel in texture coordinates.
         vec2 onePixel = vec2(1.0, 1.0) / u_textureSize;
-        outColor = vec4(1.0, 0.0, 1.0, 1.0);
+        float rvalue = texture(u_raster, v_texCoord).r; // r value of the analysed blob
 
+        outColor = vec4(1.0, 1.0, 0.0, 1.0);;
 
         if(texture(u_raster, v_texCoord).r < 1.0){
-            texture(u_raster, v_texCoord).g = 0.5;
-            outColor = vec4(1.0, 0.5, 1.0, 1.0);
+
+          if(texture(u_raster, v_texCoord).r < 1.0 && texture(u_raster, v_texCoord + vec2(0.0, onePixel.y)).r == 1.0){
+
+            vec2 maxdroite = colonneMaxFinder(v_texCoord, onePixel, rvalue);
+            if (maxdroite.y > v_texCoord.y){
+              outColor = vec4(0.0, 1.0, 1.0, 1.0);
+            }
+            else {
+              outColor = vec4(1.0, 1.0, 0.0, 1.0);
+            }
+          }
+
+          // if(texture(u_raster, v_texCoord).r < 1.0 && texture(u_raster, v_texCoord - vec2(0.0, onePixel.y)).r == 1.0){
+          //     outColor = vec4(1.0, 0.0, 0.0, 1.0);
+          // }
+          // if(texture(u_raster, v_texCoord).r < 1.0 && texture(u_raster, v_texCoord + vec2(onePixel.x, 0.0)).r == 1.0){
+          //     outColor = vec4(1.0, 1.0, 5.0, 1.0);
+          // }
+          // if(texture(u_raster, v_texCoord).r < 1.0 && texture(u_raster, v_texCoord - vec2(onePixel.x,0.0)).r == 1.0){
+          //     outColor = vec4(1.0, 0.5, 0.5, 1.0);
+          // }
+
         }
-        // if(texture(u_raster, v_texCoord).r < 1.0 && texture(u_raster, v_texCoord + vec2(onePixel.x, 0.0)).r < 1.0){
-        //     outColor = vec4(1.0, 0.0, 0.0, 1.0);
-        // }
+
+
         // outColor = vec4(rand(st) - texture(u_raster, v_texCoord).rgb, 1.0);
         // if(v_texCoord.x>0.5){
         //     outColor = texture(u_raster, v_texCoord);
