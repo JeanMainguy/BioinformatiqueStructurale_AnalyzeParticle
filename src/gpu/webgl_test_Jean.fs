@@ -63,16 +63,21 @@ let src_fs = `#version 300 es
     // Declare an output for the fragment shader
     out vec4 outColor;
 
-    float getAngle(vec2 R_pix, vec2 M_pix, vec2 L_pix){
-      // euclidian distance
-      float RM = distance(R_pix, M_pix);
-      float RL = distance(R_pix, L_pix);
-      float ML = distance(M_pix, L_pix);
+    float getAngleOrientation(vec2 R_pix, vec2 M_pix, vec2 L_pix, int i){
+      // R est le pixel de droite, M le pixel du milieu et L le pixel de Gauche
+      //On cherche le signe de la composante Y de la somme du vecteur MR et ML si on regarde les colonne
+      // ou le signe de la composante X si on regarde les lignes
+      vec2 RM = R_pix - M_pix;
+      vec2 LM = L_pix - M_pix;
+      vec2 somme = RM + LM;
 
-      // Law of cosines
-      float angleM = acos( (pow(RM, 2.0) + pow(ML, 2.0) - pow(RL, 2.0) ) / (2.0*RM*ML));
+      return signe(somme[i]);
 
-      return angleM;
+
+      // // Law of cosines
+      // float angleM = acos( (pow(RM, 2.0) + pow(ML, 2.0) - pow(RL, 2.0) ) / (2.0*RM*ML));
+      //
+      // return angleM;
 
     }
 
@@ -81,16 +86,29 @@ let src_fs = `#version 300 es
       // if we check all col then X is incremented at each turn then next is 0
       // and on the contrary next is 1 when it the rows that we want
       // Bord is 1.0 or 0.0
+      vec2 new_extrem;
+      vec2 next_coord;
+
       int i = abs(next - 1); // if next is Y we want i as X and contrary
       float signe = sign(bord*(-1.0) + 0.5); //  when bord=1.0 => signe= -1 AND bord=0.0 => signe=1
 
-      vec2 extrem_pixel = vec2(2.0, 2.0); // stay like that if we are touching a side of the image
-      vec2 new_extrem = vec2(2.0, 2.0);
-      coord[next] += onePixel[next];
-      coord[i] = bord;
-      while (extrem_pixel != vec2(-1.0, -1.0) && (0.0 <= coord[next]  && coord[next] <= 1.0)){
-        new_extrem = rowColExtremFinder(coord, onePixel, rvalue, signe, i);
-        coord[next] += onePixel[next];
+      next_coord[next] += onePixel[next];
+      next_coord[i] = bord; // tell if we start at the botom or at the top of the image
+
+      vec2 extrem_pixel = rowColExtremFinder(coord, onePixel, rvalue, signe, i); // extrem pixel is initialise first as the extrem pixel of the adjacent row or col
+
+      next_coord[next] += onePixel[next];
+      next_coord[i] = bord; // tell if we start at the botom or at the top of the image
+
+      while (extrem_pixel != vec2(-1.0, -1.0) && (0.0 <= next_coord[next]  && next_coord[next] <= 1.0)){
+        new_extrem = rowColExtremFinder(next_coord, onePixel, rvalue, signe, i);
+        float orientation = getAngleOrientation(); // check the angle
+
+        if (orientation != 0.0 && orientation != signe){
+          extrem_pixel = new_extrem;
+
+        next_coord[next] += onePixel[next];
+        next_coord[i] = bord; // tell if we start at the botom or at the top of the image
       }
 
     }
