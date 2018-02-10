@@ -71,7 +71,7 @@ let src_fs = `#version 300 es
       vec2 LM = L_pix - M_pix;
       vec2 somme = RM + LM;
 
-      return signe(somme[i]);
+      return sign(somme[i]);
 
 
       // // Law of cosines
@@ -90,28 +90,31 @@ let src_fs = `#version 300 es
       vec2 next_coord;
 
       int i = abs(next - 1); // if next is Y we want i as X and contrary
-      float signe = sign(bord*(-1.0) + 0.5); //  when bord=1.0 => signe= -1 AND bord=0.0 => signe=1
+      float dir_signe = sign(bord*(-1.0) + 0.5); //  when bord=1.0 => signe= -1 AND bord=0.0 => signe=1
 
       next_coord[next] += onePixel[next];
       next_coord[i] = bord; // tell if we start at the botom or at the top of the image
+      // vec2 extrem_pixel = rowColExtremFinder(coord, onePixel, rvalue, 1.0, 1);
+      vec2 extrem_pixel = rowColExtremFinder(coord, onePixel, rvalue, dir_signe, i); // extrem pixel is initialise first as the extrem pixel of the adjacent row or col
+    //
+    //   next_coord[next] += onePixel[next];
+    //   next_coord[i] = bord; // tell if we start at the botom or at the top of the image
+    //
+    //   while (extrem_pixel != vec2(-1.0, -1.0) && (0.0 <= next_coord[next]  && next_coord[next] <= 1.0)){
+    //     new_extrem = rowColExtremFinder(next_coord, onePixel, rvalue, signe, i);
+    //     // float orientation = getAngleOrientation(); // check the angle
+    //
+    //     if (orientation != 0.0 && orientation != signe){
+    //       extrem_pixel = new_extrem;
+    //
+    //     next_coord[next] += onePixel[next];
+    //     next_coord[i] = bord; // tell if we start at the botom or at the top of the image
+    //   }
+    //
+    // }
+    return new_extrem;
+  }
 
-      vec2 extrem_pixel = rowColExtremFinder(coord, onePixel, rvalue, signe, i); // extrem pixel is initialise first as the extrem pixel of the adjacent row or col
-
-      next_coord[next] += onePixel[next];
-      next_coord[i] = bord; // tell if we start at the botom or at the top of the image
-
-      while (extrem_pixel != vec2(-1.0, -1.0) && (0.0 <= next_coord[next]  && next_coord[next] <= 1.0)){
-        new_extrem = rowColExtremFinder(next_coord, onePixel, rvalue, signe, i);
-        float orientation = getAngleOrientation(); // check the angle
-
-        if (orientation != 0.0 && orientation != signe){
-          extrem_pixel = new_extrem;
-
-        next_coord[next] += onePixel[next];
-        next_coord[i] = bord; // tell if we start at the botom or at the top of the image
-      }
-
-    }
     vec2 rowColExtremFinder(vec2 coord, vec2 onePixel, float rvalue, float signe, int i){
     //  coord est un pixel de la colonne appartenant au blob
     //  On cherche le max de la colonne
@@ -129,7 +132,7 @@ let src_fs = `#version 300 es
         }
         coord[i] += signe * onePixel[i];
       }
-
+      getAngleOrientation(extrem_pixel, coord, extrem_pixel, 1 );
       return extrem_pixel;
     }
 
@@ -141,13 +144,14 @@ let src_fs = `#version 300 es
         vec2 onePixel = vec2(1.0, 1.0) / u_textureSize;
         float rvalue = texture(u_raster, v_texCoord).r; // r value of the analysed blob
 
-        outColor = vec4(0.0, 0.0, 0.0, 1.0);;
+        outColor = vec4(0.0, 0.0, 0.0, 1.0);
 
         if(texture(u_raster, v_texCoord).r < 1.0){
-
+        //
           if(texture(u_raster, v_texCoord).r < 1.0 && texture(u_raster, v_texCoord + vec2(0.0, onePixel.y)).r == 1.0){
             vec2 colcoord = vec2(v_texCoord.x + onePixel.x, 0.0); // botom of next col
             vec2 maxdroite = rowColExtremFinder(colcoord, onePixel, rvalue, 1.0, 1);
+            float test = getAngleOrientation(v_texCoord,v_texCoord + vec2(0.0, onePixel.y), v_texCoord, 1);
             if (maxdroite.y > v_texCoord.y){
               outColor = vec4(1.0, 0.0, 0.0, 1.0);
             }
@@ -156,6 +160,7 @@ let src_fs = `#version 300 es
               outColor = vec4(0.0, 0.0, 0.0, 1.0);
             }
           }
+        }
 
           // if(texture(u_raster, v_texCoord).r < 1.0 && texture(u_raster, v_texCoord - vec2(0.0, onePixel.y)).r == 1.0){
           //     outColor = vec4(1.0, 0.0, 0.0, 1.0);
@@ -167,7 +172,7 @@ let src_fs = `#version 300 es
           //     outColor = vec4(1.0, 0.5, 0.5, 1.0);
           // }
 
-        }
+        // }
 
 
         // outColor = vec4(rand(st) - texture(u_raster, v_texCoord).rgb, 1.0);
