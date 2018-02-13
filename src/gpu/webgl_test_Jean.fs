@@ -28,6 +28,9 @@
 
 let img = new T.Image('uint8',200,100);
 img.setPixels(new Uint8ClampedArray(particlesROIinv_pixels));
+// let img = new T.Image('uint8',20,10);
+// img.setPixels(new Uint8ClampedArray(test_line10x20));
+
 
 raster = img.getRaster();
 let view = cpu.view(raster);
@@ -49,7 +52,7 @@ let src_vs = `#version 300 es
         v_texCoord = a_texCoord;
         vec2 clipSpace = a_vertex * u_resolution * 2.0 - 1.0;
         gl_Position = vec4(clipSpace * vec2(1.0, -1.0), 0.0, 1.0);
-}` ;
+}`;
 
 let src_fs = `#version 300 es
     precision mediump float;
@@ -67,28 +70,14 @@ let src_fs = `#version 300 es
       // R est le pixel de droite, M le pixel du milieu et L le pixel de Gauche
       //On cherche le signe de la composante Y de la somme du vecteur MR et ML si on regarde les colonne
       // ou le signe de la composante X si on regarde les lignes
-      vec2 RM = R_pix - M_pix;
-      vec2 LM = L_pix - M_pix;
-      vec2 somme = RM + LM;
-      return sign(somme[i]);
-      // float orientation = 0.0;
-      // if (somme[i] > 0.0){
-      //   orientation = 1.0;
-      // }
-      // else{
-      //   if (somme[i] < 0.0){
-      //     orientation = -1.0;
-      //   }
-      // }
-      // return orientation;
+      // vec2 RM = R_pix - M_pix;
+      // vec2 LM = L_pix - M_pix;
+      // vec2 somme = RM + LM;
       // return sign(somme[i]);
-      // return sign(0.0);
-
-
-      // // Law of cosines
-      // float angleM = acos( (pow(RM, 2.0) + pow(ML, 2.0) - pow(RL, 2.0) ) / (2.0*RM*ML));
-      //
-      // return angleM;
+      float RM = R_pix[i] - M_pix[i];
+      float LM = L_pix[i] - M_pix[i];
+      float somme = RM + LM;
+      return sign(somme);
 
     }
 
@@ -109,14 +98,10 @@ let src_fs = `#version 300 es
 
         if (texture(u_raster, coord).r == rvalue) {
           extrem_pixel = coord;
-          // return vec2(-98.0, -1.0);
           return extrem_pixel;
         }
 
         coord[i] = signe * onePixel[i] + coord[i];
-        if(coord[i] < 0.0 || coord[i] > 1.0 ){
-          return vec2(-98.0, -1.0);
-        }
 
       }
       return extrem_pixel;
@@ -131,21 +116,20 @@ let src_fs = `#version 300 es
       // -1.0 if left and 1.0 if right
       vec2 new_extrem;
       vec2 next_coord = coord;
+      float orientation;
 
       int i = abs(next - 1); // if next is Y we want i as X and contrary
       float signe = sign(bord*(-1.0) + 0.5); //  when bord=1.0 => signe= -1 AND bord=0.0 => signe=1
 
       next_coord[next] = onePixel[next]*direction + next_coord[next];
-      // if (direction < 0.0){
-      //   return vec2(8.0, 8.0);
-      // }
+
       next_coord[i] = bord; // tell if we start at the botom or at the top of the image
       // vec2 extrem_pixel = rowColExtremFinder(coord, onePixel, rvalue, 1.0, 1);
       // if (next_coord == vec2(coord[next] + onePixel[next]*direction, bord)){
 
       vec2 extrem_pixel = rowColExtremFinder(next_coord, onePixel, rvalue, signe, i); // extrem pixel is initialise first as the extrem pixel of the adjacent row or col
-      if (extrem_pixel[next] == -98.0){
-          return vec2(-88.0, -1.0);
+      if (extrem_pixel[next] == -1.0){
+          return extrem_pixel;
       }
       next_coord[next] += onePixel[next]*direction;
       next_coord[i] = bord; // tell if we start at the botom or at the top of the image
@@ -155,7 +139,7 @@ let src_fs = `#version 300 es
         if (new_extrem == vec2(-1.0, -1.0)){
           break;
         }
-        float orientation = getAngleOrientation(coord, extrem_pixel, new_extrem, i); // check the angle
+        orientation = getAngleOrientation(coord, extrem_pixel, new_extrem, i); // check the angle
         // orientation = sign(orientation);
         // orientation= -1.0, 0.0, 1.0
         // it tell the orientation of the angle between coord => eextrem_pixel => new_extrem
@@ -168,6 +152,7 @@ let src_fs = `#version 300 es
         next_coord[i] = bord; // tell if we start at the botom or at the top of the image
       }
 
+
     return   extrem_pixel;
   }
 
@@ -179,13 +164,13 @@ let src_fs = `#version 300 es
         vec2 onePixel = vec2(1.0, 1.0) / u_textureSize;
         float rvalue = texture(u_raster, v_texCoord).r; // r value of the analysed blob
 
-        outColor = vec4(1.0, 1.0, 1.0, 1.0);
+        outColor = vec4(v_texCoord[1]+0.5, v_texCoord[1]+0.5, v_texCoord[1]+0.5, 1.0);
 
-        if(texture(u_raster, v_texCoord).r < 1.0){
-          outColor = vec4(0.8, 0.8, 0.8, 1.0);
-          if(texture(u_raster, v_texCoord).r < 1.0 && texture(u_raster, v_texCoord + vec2(0.0, onePixel.y)).r == 1.0){
+          // if(texture(u_raster, v_texCoord).r < 1.0 && texture(u_raster, v_texCoord + vec2(0.0, onePixel.y)).r == 1.0){
+          if(rvalue < 1.0 && texture(u_raster, v_texCoord + vec2(onePixel[0], 0.0)).r != rvalue){
+            outColor = vec4(1.0, 0.0, 0.0, 1.0);
             float bord = 1.0; // because the current pixel has no blob pixel at Y+1 then we start looking for blob from 1.0 in the next colonne
-            int next = 0; // because we are looking for pixel  in the next colonnes then we add 1 to X. And X is indice 0.
+            int next = 1; // because we are looking for pixel  in the next colonnes then we add 1 to X. And X is indice 0.
 
             // Find Extrem to the right
             float direction = 1.0;
@@ -193,46 +178,43 @@ let src_fs = `#version 300 es
             // Find Extrem to the left
             direction = -1.0;
             vec2 extrem_pixelL = checkAdjacentRowCol(v_texCoord, onePixel, rvalue, bord, next, direction);
-            // if (extrem_pixelR.x < extrem_pixelL.x){
-            //   outColor = vec4(1.0, 0.0, 0.0, 1.0);
-            // }
-            // else{
-            //     outColor = vec4(0.0, 1.0, 0.0, 1.0);
-            // }
-            if (extrem_pixelR.x == -88.0){
-            // if (onePixel.x*direction > 0.0){
-              outColor = vec4(1.0, 0.0, 0.0, 1.0);
+
+            // ADJUST WEIRD SHIFTTING
+            if (extrem_pixelR.y  < v_texCoord.y + onePixel.y/2.0 && extrem_pixelR.y > v_texCoord.y - onePixel.y/2.0){
+              extrem_pixelR.y = v_texCoord.y;
             }
-            // else{
-            //     outColor = vec4(0.0, 1.0, 0.0, 1.0);
-            // }
+            if (extrem_pixelL.y  < v_texCoord.y + onePixel.y/2.0 && extrem_pixelL.y > v_texCoord.y - onePixel.y/2.0){
+              extrem_pixelL.y = v_texCoord.y;
+            }
+
             // Orientation of extem_pixelR, currentPicel and  extem_pixelR
             int i = 1; // because we are looking for extrml in the colonne so in Y so we xant the Y composante of the vector
             // float  orientation = -1.0;
-            float orientation = getAngleOrientation( extrem_pixelR , v_texCoord,  extrem_pixelL, i);
-            // -1.0 here be cause we are checking pixel that doesn't have pixel at Y+1
-            // if (orientation < 0.0){
-            //   outColor = vec4(1.0, 0.0, 1.0, 1.0);
-            // }
-            // else{
-            //     outColor = vec4(0.8, 0.3, 0.6, 1.0);
-            // }
+            float orientation = getAngleOrientation(extrem_pixelL , v_texCoord,  extrem_pixelR, i);
+
+            if (orientation < 0.0){
+              outColor = vec4(0.0, 0.0, 1.0, 1.0);
+            }
+            if (orientation == 0.0){
+              outColor = vec4(0.0, 1.0, 0.0, 1.0);
+            }
+            if (orientation > 0.0){
+              outColor = vec4(1.0, 1.0, 0.0, 1.0);
+            }
+            // WHEN THERE IS NO OTHER PIXEL OF THE BLOB ON ONE SIDE OF THE CURRENT pixel
+            // The function rowColExtremFinder give an extrem value of -1.0
+            // Then an extrem value of -1.0 means that the current pixel is a vertex of the convexHull
+            // true only if we deal with 4 connected pixel
+            if (extrem_pixelL.y == -1.0){
+              outColor = vec4(1.0, 0.0, 0.0, 1.0);
+            }
+
+            if (extrem_pixelR.y == -1.0){
+              outColor = vec4(1.0, 0.0, 0.0, 1.0);
+            }
 
 
-
-            // vec2 colcoord = vec2(v_texCoord.x + onePixel.x, 0.0); // botom of next col
-            // vec2 maxdroite = rowColExtremFinder(colcoord, onePixel, rvalue, 1.0, 1);
-            // float test = getAngleOrientation(v_texCoord,v_texCoord + vec2(0.0, onePixel.y), v_texCoord, 1);
-
-            // if (maxdroite.y > v_texCoord.y){
-            //   outColor = vec4(1.0, 0.0, 0.0, 1.0);
-            // }
-            //
-            // else {
-            //   outColor = vec4(0.0, 0.0, 0.0, 1.0);
-            // }
           }
-        }
 
           // if(texture(u_raster, v_texCoord).r < 1.0 && texture(u_raster, v_texCoord - vec2(0.0, onePixel.y)).r == 1.0){
           //     outColor = vec4(1.0, 0.0, 0.0, 1.0);
