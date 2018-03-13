@@ -68,12 +68,7 @@ let src_fs = `#version 300 es
 
     float getAngleOrientation(vec2 R_pix, vec2 M_pix, vec2 L_pix, int y){
       // R est le pixel de droite, M le pixel du milieu et L le pixel de Gauche
-      //On cherche le signe de la composante Y de la somme du vecteur MR et ML si on regarde les colonne
-      // ou le signe de la composante X si on regarde les lignes
-      // vec2 RM = R_pix - M_pix;
-      // vec2 LM = L_pix - M_pix;
-      // vec2 somme = RM + LM;
-      // return sign(somme[i]);
+      // We want to know if M_pix is above and below the line joining R and L.
 
       int x =  abs(y - 1); // facteur de confusion extreme
 
@@ -94,9 +89,6 @@ let src_fs = `#version 300 es
         // M est au dessus  de la droite
         return -1.0;
       }
-
-      // float somme = RM + LM;
-      // return sign(somme);
 
     }
 
@@ -203,12 +195,9 @@ let src_fs = `#version 300 es
     vec2 extrem_pixelL = checkAdjacentRowCol(v_texCoord, onePixel, rvalue, bord, next, direction);
 
     // Orientation of extem_pixelR, currentPicel and  extem_pixelR
-    int i = 1; // because we are looking for extrml in the colonne so in Y so we xant the Y composante of the vector
+    int i = 1; // because we are looking for extrml in the colonne so in Y
     // float  orientation = -1.0;
     float orientation = getAngleOrientation(extrem_pixelL , v_texCoord,  extrem_pixelR, i);
-    // if (orientation < 0.0){
-    //   outColor = vec4(0.0, 0.0, 1.0, 1.0);
-    // }
 
     if ((orientation > 0.0 && bord == 0.0) || (orientation < 0.0 && bord == 1.0)){
       outColor = vec4(1.0, 0.2, 0.2, 1.0);
